@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Hub Dashboard</title>
+    <!-- Tailwind CSS for UI Layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap');
@@ -15,133 +16,270 @@
             height: 100% !important;
             overflow: hidden !important;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0f172a !important;
+            background-color: #0c111d !important;
         }
         .mono-font { font-family: 'Share Tech Mono', monospace; }
         
-        /* Frosted Glass UI Panels */
+        /* Softer Premium Glassmorphism */
         .glass-widget {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(24px) saturate(140%);
+            -webkit-backdrop-filter: blur(24px) saturate(140%);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        
+        /* Smooth Elastic Pop In Animation for Widgets */
+        @keyframes widgetPop {
+            0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .glass-widget:not(.hidden) {
+            animation: widgetPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
         .drag-handle { cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
+        
+        /* Softer dock design */
         .dock-container {
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
         
         /* Traffic Light Glow Animations */
-        .light-glow-green { box-shadow: 0 0 20px #22c55e; }
-        .light-glow-yellow { box-shadow: 0 0 20px #eab308; }
-        .light-glow-red { box-shadow: 0 0 20px #ef4444; }
+        .light-glow-green { box-shadow: 0 0 25px #22c55e; }
+        .light-glow-yellow { box-shadow: 0 0 25px #eab308; }
+        .light-glow-red { box-shadow: 0 0 25px #ef4444; }
+
+        /* Dynamic background transition */
+        .bg-transition {
+            transition: background-image 0.5s ease-in-out;
+        }
     </style>
 </head>
-<body class="w-full h-full relative">
+<body id="app-body" class="w-full h-full relative select-none bg-transition bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80');">
 
-    <div class="w-full h-full relative overflow-hidden p-6 z-10" style="background-image: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 100%);">
+    <!-- Soft dark dimming overlay to keep the controls completely readable and pop-out -->
+    <div class="absolute inset-0 bg-slate-950/35 backdrop-blur-[0.5px] pointer-events-none z-0"></div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-none space-y-2"></div>
+
+    <!-- FULL SCREEN WORKSPACE -->
+    <div class="w-full h-full relative overflow-hidden p-6 z-10">
         
         <div class="text-center pt-2">
-            <h1 class="text-sm font-bold text-slate-400 tracking-wider">FS CLASSROOM UTILITIES</h1>
+            <h1 class="text-sm font-bold text-white/80 tracking-widest drop-shadow">FS CLASSROOM UTILITIES</h1>
         </div>
 
-        <div id="widget-clock" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 50px;">
-            <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-indigo-400">🕒 CLOCK</span>
-                <button onclick="toggleWidget('clock')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
+        <!-- 1. CLOCK -->
+        <div id="widget-clock" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 50px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-indigo-300 tracking-wider">🕒 CLOCK</span>
+                <button onclick="toggleWidget('clock')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
             </div>
-            <div class="p-4 text-center">
+            <div class="p-5 text-center">
                 <div id="clock-digital-time" class="mono-font text-3xl font-bold text-white tracking-widest">00:00:00</div>
-                <div id="clock-calendar-date" class="text-[11px] text-slate-400 mt-1">Fetching...</div>
+                <div id="clock-calendar-date" class="text-[11px] text-slate-300 mt-1 font-semibold tracking-wide">Fetching...</div>
             </div>
         </div>
 
-        <div id="widget-timer" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 350px;">
-            <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-emerald-400">⏱️ TIMER</span>
-                <button onclick="toggleWidget('timer')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
+        <!-- 2. TIMER -->
+        <div id="widget-timer" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 350px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-emerald-300 tracking-wider">⏱️ TIMER</span>
+                <button onclick="toggleWidget('timer')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
             </div>
-            <div class="p-4 flex flex-col items-center">
-                <div id="timer-display" class="mono-font text-3xl font-bold text-emerald-400 mb-3">01:00</div>
-                <div class="grid grid-cols-3 gap-1 w-full mb-3 text-[10px] font-bold">
-                    <button onclick="setTimer(60)" class="bg-slate-800 py-1 rounded text-white">1 Min</button>
-                    <button onclick="setTimer(300)" class="bg-slate-800 py-1 rounded text-white">5 Min</button>
-                    <button onclick="setTimer(600)" class="bg-slate-800 py-1 rounded text-white">10 Min</button>
+            <div class="p-5 flex flex-col items-center">
+                <div id="timer-display" class="mono-font text-4xl font-bold text-emerald-300 mb-3 tracking-wider">01:00</div>
+                <div class="grid grid-cols-3 gap-1.5 w-full mb-4 text-[10px] font-bold">
+                    <button onclick="setTimer(60)" class="bg-slate-800/60 hover:bg-slate-700/60 transition py-1.5 rounded-lg text-white">1 Min</button>
+                    <button onclick="setTimer(300)" class="bg-slate-800/60 hover:bg-slate-700/60 transition py-1.5 rounded-lg text-white">5 Min</button>
+                    <button onclick="setTimer(600)" class="bg-slate-800/60 hover:bg-slate-700/60 transition py-1.5 rounded-lg text-white">10 Min</button>
                 </div>
                 <div class="flex space-x-2 w-full text-white">
-                    <button id="btn-timer-start" onclick="toggleTimer()" class="flex-1 bg-emerald-600 font-bold py-1 rounded text-xs">START</button>
-                    <button onclick="resetTimer()" class="bg-slate-800 px-3 rounded text-xs">Reset</button>
+                    <button id="btn-timer-start" onclick="toggleTimer()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 transition font-bold py-1.5 rounded-xl text-xs tracking-wider">START</button>
+                    <button onclick="resetTimer()" class="bg-slate-800/80 hover:bg-slate-700/80 transition px-4 rounded-xl text-xs">Reset</button>
                 </div>
             </div>
         </div>
 
-        <div id="widget-sound" class="absolute w-72 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 260px; left: 50px;">
-            <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-rose-400">🎙️ TRAFFIC LIGHT</span>
-                <button onclick="toggleWidget('sound')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
+        <!-- 3. TRAFFIC LIGHT SOUND LEVEL METER -->
+        <div id="widget-sound" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 50px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-rose-300 tracking-wider">🎙️ TRAFFIC LIGHT</span>
+                <button onclick="toggleWidget('sound')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
             </div>
-            <div class="p-4 flex flex-col items-center">
+            <div class="p-5 flex flex-col items-center">
                 <div id="mic-btn-container" class="text-center py-2">
-                    <button onclick="startAudioMeter()" class="bg-rose-600 text-white font-bold px-4 py-2 rounded-xl text-xs">Activate Mic Sensor</button>
+                    <button onclick="startAudioMeter()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-5 py-2.5 rounded-2xl text-xs tracking-wider shadow-lg">Activate Mic Sensor</button>
                 </div>
                 <div id="mic-active-container" class="w-full hidden flex flex-col items-center">
-                    <div class="w-36 bg-slate-950 p-2 rounded-2xl flex justify-around items-center border border-white/10 mb-3">
-                        <div id="light-red" class="w-8 h-8 rounded-full bg-rose-950/40 border border-rose-900/50"></div>
-                        <div id="light-yellow" class="w-8 h-8 rounded-full bg-amber-950/40 border border-amber-900/50"></div>
-                        <div id="light-green" class="w-8 h-8 rounded-full bg-emerald-950/40 border border-emerald-900/50"></div>
+                    <div class="w-40 bg-slate-950/80 p-2.5 rounded-2xl flex justify-around items-center border border-white/10 mb-4">
+                        <div id="light-red" class="w-9 h-9 rounded-full bg-rose-950/40 border border-rose-900/50 transition duration-300"></div>
+                        <div id="light-yellow" class="w-9 h-9 rounded-full bg-amber-950/40 border border-amber-900/50 transition duration-300"></div>
+                        <div id="light-green" class="w-9 h-9 rounded-full bg-emerald-950/40 border border-emerald-900/50 transition duration-300"></div>
                     </div>
-                    <div class="w-full px-1 mb-2">
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1">
-                            <span>ALERT AT:</span> <span id="limit-label" class="text-rose-400">70%</span>
+                    <div class="w-full px-1 mb-3">
+                        <div class="flex justify-between text-[10px] text-slate-300 font-bold mb-1.5 tracking-wider">
+                            <span>ALERT THRESHOLD:</span> <span id="limit-label" class="text-rose-400">70%</span>
                         </div>
-                        <input type="range" id="sound-limit-slider" min="10" max="100" value="70" class="w-full h-1 bg-slate-800 appearance-none cursor-pointer accent-rose-500">
+                        <input type="range" id="sound-limit-slider" min="10" max="100" value="70" class="w-full h-1 bg-slate-800 appearance-none cursor-pointer accent-rose-500 rounded-lg">
                     </div>
-                    <button id="btn-bell-mute" onclick="toggleBellMute()" class="w-full py-1 text-[10px] font-bold rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">🔊 BELL ACTIVE</button>
+                    <button id="btn-bell-mute" onclick="toggleBellMute()" class="w-full py-1.5 text-[10px] font-bold rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 tracking-widest">🔊 BELL ACTIVE</button>
                 </div>
             </div>
         </div>
 
-        <div id="widget-picker" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 260px; left: 350px;">
-            <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-purple-400">🎰 RANDOMIZER</span>
-                <button onclick="toggleWidget('picker')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
+        <!-- 4. RANDOMIZER -->
+        <div id="widget-picker" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 350px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-purple-300 tracking-wider">🎰 RANDOMIZER</span>
+                <button onclick="toggleWidget('picker')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
             </div>
-            <div class="p-3">
-                <div id="picker-display" class="bg-slate-950 rounded-xl h-12 flex items-center justify-center font-bold text-purple-300 text-base mb-2 border border-white/5">Ready</div>
-                <textarea id="picker-names" class="w-full bg-slate-900 text-white text-[11px] rounded-lg p-1 h-10 resize-none outline-none">Alex, Sam, Taylor, Jordan, Morgan</textarea>
-                <button onclick="spinNames()" class="w-full bg-purple-600 text-white font-bold py-1 rounded-xl text-xs mt-1">SPIN</button>
-            </div>
-        </div>
-
-        <div id="widget-symbols" class="absolute w-[350px] rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; right: 50px;">
-            <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-amber-400">📣 EXPECTATIONS</span>
-                <button onclick="toggleWidget('symbols')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
-            </div>
-            <div class="p-3 grid grid-cols-2 gap-2 text-center text-white">
-                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🤫</span><b>SILENCE</b></button>
-                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">💬</span><b>WHISPER</b></button>
-                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">👥</span><b>PARTNER</b></button>
-                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🏫</span><b>GROUP</b></button>
+            <div class="p-4">
+                <div id="picker-display" class="bg-slate-950/80 rounded-2xl h-12 flex items-center justify-center font-bold text-purple-300 text-base mb-3 border border-white/10 tracking-wide">Ready</div>
+                <textarea id="picker-names" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2 h-12 resize-none outline-none border border-white/5">Alex, Sam, Taylor, Jordan, Morgan</textarea>
+                <button onclick="spinNames()" class="w-full bg-purple-600 hover:bg-purple-500 transition text-white font-bold py-1.5 rounded-xl text-xs mt-2 tracking-wider shadow-lg">SPIN</button>
             </div>
         </div>
 
-        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3 rounded-2xl flex space-x-4 shadow-2xl z-30">
-            <button onclick="toggleWidget('clock')" class="w-12 h-12 rounded-xl bg-indigo-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🕒</button>
-            <button onclick="toggleWidget('timer')" class="w-12 h-12 rounded-xl bg-emerald-600 text-xl flex items-center justify-center transform hover:scale-110 transition">⏱️</button>
-            <button onclick="toggleWidget('sound')" class="w-12 h-12 rounded-xl bg-rose-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🎙️</button>
-            <button onclick="toggleWidget('picker')" class="w-12 h-12 rounded-xl bg-purple-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🎰</button>
-            <button onclick="toggleWidget('symbols')" class="w-12 h-12 rounded-xl bg-amber-600 text-xl flex items-center justify-center transform hover:scale-110 transition">📣</button>
+        <!-- 5. WORK SYMBOLS (EXPECTATIONS) -->
+        <div id="widget-symbols" class="absolute w-[440px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; right: 50px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-amber-300 tracking-wider">📣 EXPECTATIONS</span>
+                <button onclick="toggleWidget('symbols')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+            </div>
+            <div class="p-5 grid grid-cols-2 gap-3.5 text-center text-white">
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-4 bg-slate-800/30 border border-white/5 rounded-2xl transition duration-200 hover:bg-slate-700/30">
+                    <span class="text-5xl mb-2 filter drop-shadow">🤫</span>
+                    <b class="text-xs tracking-widest font-extrabold text-slate-300">SILENCE</b>
+                </button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-4 bg-slate-800/30 border border-white/5 rounded-2xl transition duration-200 hover:bg-slate-700/30">
+                    <span class="text-5xl mb-2 filter drop-shadow">💬</span>
+                    <b class="text-xs tracking-widest font-extrabold text-slate-300">WHISPER</b>
+                </button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-4 bg-slate-800/30 border border-white/5 rounded-2xl transition duration-200 hover:bg-slate-700/30">
+                    <span class="text-5xl mb-2 filter drop-shadow">👥</span>
+                    <b class="text-xs tracking-widest font-extrabold text-slate-300">PARTNER</b>
+                </button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-4 bg-slate-800/30 border border-white/5 rounded-2xl transition duration-200 hover:bg-slate-700/30">
+                    <span class="text-5xl mb-2 filter drop-shadow">🏫</span>
+                    <b class="text-xs tracking-widest font-extrabold text-slate-300">GROUP</b>
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. SETTINGS & BACKGROUNDS WIDGET (NEW) -->
+        <div id="widget-settings" class="absolute w-80 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; right: 50px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-sky-300 tracking-wider">⚙️ DASHBOARD SETTINGS</span>
+                <button onclick="toggleWidget('settings')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+            </div>
+            <div class="p-4 flex flex-col space-y-4">
+                <!-- Custom Google Image Input -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wider">Custom Background Image URL</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="custom-bg-input" placeholder="Paste any image link here..." 
+                               class="flex-1 bg-slate-950/80 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-sky-500 transition">
+                        <button onclick="applyCustomBackground()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wider">Quick Presets</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="changeBackgroundPreset('beach')" class="flex items-center space-x-2 p-1.5 bg-slate-800/40 hover:bg-slate-800/80 transition rounded-xl text-xs text-white border border-white/5">
+                            <span class="text-base">🏝️</span> <span class="font-semibold text-[10px]">Sunny Beach</span>
+                        </button>
+                        <button onclick="changeBackgroundPreset('forest')" class="flex items-center space-x-2 p-1.5 bg-slate-800/40 hover:bg-slate-800/80 transition rounded-xl text-xs text-white border border-white/5">
+                            <span class="text-base">🌲</span> <span class="font-semibold text-[10px]">Cozy Forest</span>
+                        </button>
+                        <button onclick="changeBackgroundPreset('space')" class="flex items-center space-x-2 p-1.5 bg-slate-800/40 hover:bg-slate-800/80 transition rounded-xl text-xs text-white border border-white/5">
+                            <span class="text-base">🌌</span> <span class="font-semibold text-[10px]">Deep Space</span>
+                        </button>
+                        <button onclick="changeBackgroundPreset('classroom')" class="flex items-center space-x-2 p-1.5 bg-slate-800/40 hover:bg-slate-800/80 transition rounded-xl text-xs text-white border border-white/5">
+                            <span class="text-base">🏫</span> <span class="font-semibold text-[10px]">Study Lounge</span>
+                        </button>
+                        <button onclick="changeBackgroundPreset('dark')" class="flex items-center space-x-2 p-1.5 bg-slate-800/40 hover:bg-slate-800/80 transition rounded-xl text-xs text-white border border-white/5 col-span-2 justify-center">
+                            <span class="text-base">🖤</span> <span class="font-semibold text-[10px]">Minimal Slate Dark</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-400 font-medium text-center border-t border-white/5 pt-2">
+                    *Tip: Copy any image address from Google Images and paste it above!
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROL PANEL DOCKBAR WITH NAMES UNDER ICONS -->
+        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-5 shadow-3xl z-30">
+            <button onclick="toggleWidget('clock')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600/90 hover:bg-indigo-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🕒</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Clock</span>
+            </button>
+            <button onclick="toggleWidget('timer')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">⏱️</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Timer</span>
+            </button>
+            <button onclick="toggleWidget('sound')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-rose-600/90 hover:bg-rose-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎙️</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Sound</span>
+            </button>
+            <button onclick="toggleWidget('picker')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-purple-600/90 hover:bg-purple-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎰</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Spin</span>
+            </button>
+            <button onclick="toggleWidget('symbols')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-amber-600/90 hover:bg-amber-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📣</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Symbols</span>
+            </button>
+            <button onclick="toggleWidget('settings')" class="flex flex-col items-center group transition transform hover:scale-105">
+                <div class="w-12 h-12 rounded-2xl bg-sky-600/90 hover:bg-sky-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">⚙️</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Bg Edit</span>
+            </button>
         </nav>
     </div>
 
     <script>
-        // Audio Engine
+        // Premium Custom Toast Notifications (Replaces ugly browser alert pops)
+        function showNotification(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let icon = "🔔";
+            let colorClasses = "bg-slate-900 border-white/10 text-white";
+            if (type === "success") { icon = "✅"; colorClasses = "bg-emerald-950/90 border-emerald-500/30 text-emerald-300"; }
+            if (type === "error") { icon = "❌"; colorClasses = "bg-rose-950/90 border-rose-500/30 text-rose-300"; }
+            if (type === "timer") { icon = "⏱️"; colorClasses = "bg-amber-950/90 border-amber-500/30 text-amber-300 animate-bounce"; }
+
+            toast.className = `flex items-center space-x-3 px-5 py-3 rounded-2xl border ${colorClasses} shadow-2xl transition duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm`;
+            toast.innerHTML = `<span class="text-lg">${icon}</span> <span class="text-xs font-bold tracking-wide">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // Auto dismiss toast after 3.5 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3500);
+        }
+
+        // Audio Engine Setup
         let audioCtx = null, isMuted = false, alarmId = null, ringing = false;
         function getCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+        
         function playBell() {
             if (isMuted) return;
             try {
@@ -156,26 +294,37 @@
                 });
             } catch(e){}
         }
+
         function triggerAlarm() {
             if (ringing) return; ringing = true; playBell();
             alarmId = setInterval(playBell, 600);
-            setTimeout(() => { clearInterval(alarmId); alarmId = null; ringing = false; }, 5000);
+            
+            // REDUCED ALARM BELL DURATION TO EXACTLY 3 SECONDS
+            setTimeout(() => { clearInterval(alarmId); alarmId = null; ringing = false; }, 3000);
         }
+
         function toggleBellMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-bell-mute');
             btn.textContent = isMuted ? "🔇 BELL MUTED" : "🔊 BELL ACTIVE";
-            btn.className = isMuted ? "w-full py-1 text-[10px] font-bold rounded-lg bg-rose-600/20 text-rose-400 border border-rose-500/30" : "w-full py-1 text-[10px] font-bold rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30";
+            btn.className = isMuted ? "w-full py-1.5 text-[10px] font-bold rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 tracking-widest" : "w-full py-1.5 text-[10px] font-bold rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 tracking-widest";
             if(isMuted) { clearInterval(alarmId); ringing = false; }
+            showNotification(isMuted ? "Bell Sound Muted" : "Bell Sound Activated", "info");
         }
 
-        // Window Handlers
-        function toggleWidget(id) { const t = document.getElementById('widget-' + id); if (t) t.classList.toggle('hidden'); }
+        // Draggable Widget Code
+        function toggleWidget(id) { 
+            const t = document.getElementById('widget-' + id); 
+            if (t) {
+                t.classList.toggle('hidden'); 
+            }
+        }
+        
         let maxZ = 20;
         function drag(el) {
             const h = el.querySelector('.drag-handle'); if (!h) return;
             h.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button')) return;
+                if (e.target.closest('button') || e.target.closest('input')) return;
                 maxZ++; el.style.zIndex = maxZ;
                 let sX = e.clientX, sY = e.clientY, oL = el.offsetLeft, oT = el.offsetTop;
                 function move(m) { el.style.left = (oL + (m.clientX - sX)) + 'px'; el.style.top = (oT + (m.clientY - sY)) + 'px'; }
@@ -185,27 +334,37 @@
         }
         document.querySelectorAll('.glass-widget').forEach(drag);
 
-        // Clock & Date Engine
+        // Clock & Calendar
         setInterval(() => {
             const d = new Date(), p = n => String(n).padStart(2, '0');
             document.getElementById('clock-digital-time').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
             document.getElementById('clock-calendar-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         }, 1000);
 
-        // Countdown Timer Engine
+        // Timer Code
         let dur = 60, rem = 60, tId = null;
         function updateT() { document.getElementById('timer-display').textContent = `${String(Math.floor(rem / 60)).padStart(2,'0')}:${String(rem % 60).padStart(2,'0')}`; }
-        function setTimer(s) { clearInterval(tId); tId = null; dur = s; rem = s; updateT(); }
+        function setTimer(s) { clearInterval(tId); tId = null; dur = s; rem = s; updateT(); showNotification(`Timer set to ${s/60} Minute(s)`, "info"); }
         function toggleTimer() {
             if (tId) { clearInterval(tId); tId = null; document.getElementById('btn-timer-start').textContent = "START"; }
             else {
                 document.getElementById('btn-timer-start').textContent = "PAUSE";
-                tId = setInterval(() => { if (rem <= 1) { clearInterval(tId); tId = null; alert("Timer up!"); rem = dur; } else { rem--; } updateT(); }, 1000);
+                tId = setInterval(() => { 
+                    if (rem <= 1) { 
+                        clearInterval(tId); 
+                        tId = null; 
+                        showNotification("Timer Complete! 🕒", "timer");
+                        rem = dur; 
+                    } else { 
+                        rem--; 
+                    } 
+                    updateT(); 
+                }, 1000);
             }
         }
         function resetTimer() { clearInterval(tId); tId = null; rem = dur; updateT(); document.getElementById('btn-timer-start').textContent = "START"; }
 
-        // Live Audio Analysis Engine
+        // Live Mic Level Detection
         async function startAudioMeter() {
             getCtx();
             try {
@@ -217,24 +376,26 @@
                 const data = new Uint8Array(az.frequencyBinCount);
                 const r = document.getElementById('light-red'), y = document.getElementById('light-yellow'), g = document.getElementById('light-green'), s = document.getElementById('sound-limit-slider');
                 
+                showNotification("Microphone linked successfully!", "success");
+
                 function frame() {
                     az.getByteFrequencyData(data);
                     let pct = Math.min(Math.round((data.reduce((a,b)=>a+b,0)/data.length/110)*100), 100);
                     let lim = parseInt(s.value);
-                    r.className = "w-8 h-8 rounded-full bg-rose-950/40 border border-rose-900/50";
-                    y.className = "w-8 h-8 rounded-full bg-amber-950/40 border border-amber-900/50";
-                    g.className = "w-8 h-8 rounded-full bg-emerald-950/40 border border-emerald-500/30";
-                    if (pct >= lim) { r.className = "w-8 h-8 rounded-full bg-rose-500 border border-white light-glow-red"; triggerAlarm(); }
-                    else if (pct >= lim * 0.8) { y.className = "w-8 h-8 rounded-full bg-yellow-400 border border-white light-glow-yellow"; }
-                    else { g.className = "w-8 h-8 rounded-full bg-green-500 border border-white light-glow-green"; }
+                    r.className = "w-9 h-9 rounded-full bg-rose-950/40 border border-rose-900/50";
+                    y.className = "w-9 h-9 rounded-full bg-amber-950/40 border border-amber-900/50";
+                    g.className = "w-9 h-9 rounded-full bg-emerald-950/40 border border-emerald-500/30";
+                    if (pct >= lim) { r.className = "w-9 h-9 rounded-full bg-rose-500 border border-white light-glow-red"; triggerAlarm(); }
+                    else if (pct >= lim * 0.8) { y.className = "w-9 h-9 rounded-full bg-yellow-400 border border-white light-glow-yellow"; }
+                    else { g.className = "w-9 h-9 rounded-full bg-green-500 border border-white light-glow-green"; }
                     requestAnimationFrame(frame);
                 }
                 frame();
-            } catch(e) { alert("Mic permission denied."); }
+            } catch(e) { showNotification("Microphone access denied or blocked.", "error"); }
         }
         document.getElementById('sound-limit-slider').addEventListener('input', e => document.getElementById('limit-label').textContent = e.target.value + '%');
 
-        // Spin Engine
+        // Name Spinner
         function spinNames() {
             const names = document.getElementById('picker-names').value.split(',').map(n=>n.trim()).filter(n=>n);
             if(!names.length) return;
@@ -243,8 +404,62 @@
             roll();
         }
         function setSymbol(btn) {
-            document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('border-indigo-500', 'bg-slate-800'));
-            btn.classList.add('border-indigo-500', 'bg-slate-800');
+            document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('border-amber-400/80', 'bg-slate-700/50', 'scale-105'));
+            btn.classList.add('border-amber-400/80', 'bg-slate-700/50', 'scale-105');
+        }
+
+        // Custom Background Engine
+        const backgroundPresets = {
+            beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
+            forest: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80',
+            space: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1920&q=80',
+            classroom: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1920&q=80',
+            dark: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
+        };
+
+        // Load saved background on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedBg = localStorage.getItem('class_hub_background');
+            if (savedBg) {
+                applyBgStyle(savedBg);
+                if (!backgroundPresets[savedBg]) {
+                    document.getElementById('custom-bg-input').value = savedBg;
+                }
+            }
+        });
+
+        function applyBgStyle(urlOrVal) {
+            const body = document.getElementById('app-body');
+            if (urlOrVal.startsWith('http') || urlOrVal.startsWith('data:')) {
+                body.style.backgroundImage = `url('${urlOrVal}')`;
+            } else if (urlOrVal.startsWith('linear-gradient')) {
+                body.style.backgroundImage = urlOrVal;
+            } else {
+                // If it is a clean shorthand preset
+                const targetUrl = backgroundPresets[urlOrVal] || urlOrVal;
+                if (targetUrl.startsWith('linear-gradient')) {
+                    body.style.backgroundImage = targetUrl;
+                } else {
+                    body.style.backgroundImage = `url('${targetUrl}')`;
+                }
+            }
+        }
+
+        function changeBackgroundPreset(presetKey) {
+            applyBgStyle(presetKey);
+            localStorage.setItem('class_hub_background', presetKey);
+            showNotification(`Background preset "${presetKey}" applied!`, "success");
+        }
+
+        function applyCustomBackground() {
+            const inputVal = document.getElementById('custom-bg-input').value.trim();
+            if (!inputVal) {
+                showNotification("Please paste a valid image link.", "error");
+                return;
+            }
+            applyBgStyle(inputVal);
+            localStorage.setItem('class_hub_background', inputVal);
+            showNotification("Your custom Google background is live!", "success");
         }
     </script>
 </body>
