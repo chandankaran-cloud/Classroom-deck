@@ -40,15 +40,15 @@
         .light-glow-red { box-shadow: 0 0 20px #ef4444; }
     </style>
 </head>
-<body class="w-full h-full flex relative">
+<body class="w-full h-full relative">
 
-    <div class="w-[45%] h-full relative overflow-hidden p-4 border-r border-white/10 z-10" style="background-image: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 100%);">
+    <div class="w-full h-full relative overflow-hidden p-6 z-10" style="background-image: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 100%);">
         
         <div class="text-center pt-2">
-            <h1 class="text-xs font-bold text-slate-400 tracking-wider">CLASSROOM UTILITIES</h1>
+            <h1 class="text-sm font-bold text-slate-400 tracking-wider">FS CLASSROOM UTILITIES</h1>
         </div>
 
-        <div id="widget-clock" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 60px; left: 20px;">
+        <div id="widget-clock" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 50px;">
             <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-indigo-400">🕒 CLOCK</span>
                 <button onclick="toggleWidget('clock')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <div id="widget-timer" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 60px; left: 40px;">
+        <div id="widget-timer" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 350px;">
             <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-emerald-400">⏱️ TIMER</span>
                 <button onclick="toggleWidget('timer')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
@@ -67,25 +67,25 @@
             <div class="p-4 flex flex-col items-center">
                 <div id="timer-display" class="mono-font text-3xl font-bold text-emerald-400 mb-3">01:00</div>
                 <div class="grid grid-cols-3 gap-1 w-full mb-3 text-[10px] font-bold">
-                    <button onclick="setTimer(60)" class="bg-slate-800 py-1 rounded">1 Min</button>
-                    <button onclick="setTimer(300)" class="bg-slate-800 py-1 rounded">5 Min</button>
-                    <button onclick="setTimer(600)" class="bg-slate-800 py-1 rounded">10 Min</button>
+                    <button onclick="setTimer(60)" class="bg-slate-800 py-1 rounded text-white">1 Min</button>
+                    <button onclick="setTimer(300)" class="bg-slate-800 py-1 rounded text-white">5 Min</button>
+                    <button onclick="setTimer(600)" class="bg-slate-800 py-1 rounded text-white">10 Min</button>
                 </div>
-                <div class="flex space-x-2 w-full">
+                <div class="flex space-x-2 w-full text-white">
                     <button id="btn-timer-start" onclick="toggleTimer()" class="flex-1 bg-emerald-600 font-bold py-1 rounded text-xs">START</button>
                     <button onclick="resetTimer()" class="bg-slate-800 px-3 rounded text-xs">Reset</button>
                 </div>
             </div>
         </div>
 
-        <div id="widget-sound" class="absolute w-72 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 180px; left: 20px;">
+        <div id="widget-sound" class="absolute w-72 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 260px; left: 50px;">
             <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-rose-400">🎙️ TRAFFIC LIGHT</span>
                 <button onclick="toggleWidget('sound')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
             </div>
             <div class="p-4 flex flex-col items-center">
                 <div id="mic-btn-container" class="text-center py-2">
-                    <button onclick="startAudioMeter()" class="bg-rose-600 font-bold px-4 py-2 rounded-xl text-xs">Activate Mic Sensor</button>
+                    <button onclick="startAudioMeter()" class="bg-rose-600 text-white font-bold px-4 py-2 rounded-xl text-xs">Activate Mic Sensor</button>
                 </div>
                 <div id="mic-active-container" class="w-full hidden flex flex-col items-center">
                     <div class="w-36 bg-slate-950 p-2 rounded-2xl flex justify-around items-center border border-white/10 mb-3">
@@ -104,7 +104,7 @@
             </div>
         </div>
 
-        <div id="widget-picker" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 200px; left: 40px;">
+        <div id="widget-picker" class="absolute w-64 rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 260px; left: 350px;">
             <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-purple-400">🎰 RANDOMIZER</span>
                 <button onclick="toggleWidget('picker')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
@@ -112,44 +112,34 @@
             <div class="p-3">
                 <div id="picker-display" class="bg-slate-950 rounded-xl h-12 flex items-center justify-center font-bold text-purple-300 text-base mb-2 border border-white/5">Ready</div>
                 <textarea id="picker-names" class="w-full bg-slate-900 text-white text-[11px] rounded-lg p-1 h-10 resize-none outline-none">Alex, Sam, Taylor, Jordan, Morgan</textarea>
-                <button onclick="spinNames()" class="w-full bg-purple-600 font-bold py-1 rounded-xl text-xs mt-1">SPIN</button>
+                <button onclick="spinNames()" class="w-full bg-purple-600 text-white font-bold py-1 rounded-xl text-xs mt-1">SPIN</button>
             </div>
         </div>
 
-        <div id="widget-symbols" class="absolute w-[90%] rounded-2xl glass-widget overflow-hidden z-20 hidden" style="bottom: 90px; left: 5%;">
+        <div id="widget-symbols" class="absolute w-[350px] rounded-2xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; right: 50px;">
             <div class="drag-handle bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-amber-400">📣 EXPECTATIONS</span>
                 <button onclick="toggleWidget('symbols')" class="text-slate-400 hover:text-rose-400 font-bold">✕</button>
             </div>
-            <div class="p-3 grid grid-cols-4 gap-2 text-center">
-                <button onclick="setSymbol(this, 'Silence')" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🤫</span><b>SILENCE</b></button>
-                <button onclick="setSymbol(this, 'Whisper')" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">💬</span><b>WHISPER</b></button>
-                <button onclick="setSymbol(this, 'Partner')" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">👥</span><b>PARTNER</b></button>
-                <button onclick="setSymbol(this, 'Group')" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🏫</span><b>GROUP</b></button>
+            <div class="p-3 grid grid-cols-2 gap-2 text-center text-white">
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🤫</span><b>SILENCE</b></button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">💬</span><b>WHISPER</b></button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">👥</span><b>PARTNER</b></button>
+                <button onclick="setSymbol(this)" class="symbol-btn flex flex-col items-center p-2 bg-slate-800/30 border border-white/5 rounded-xl text-xs"><span class="text-2xl">🏫</span><b>GROUP</b></button>
             </div>
         </div>
 
-        <nav class="absolute bottom-4 left-1/2 -translate-x-1/2 dock-container px-4 py-2 rounded-xl flex space-x-3 shadow-2xl">
-            <button onclick="toggleWidget('clock')" class="w-10 h-10 rounded-lg bg-indigo-600 text-lg flex items-center justify-center">🕒</button>
-            <button onclick="toggleWidget('timer')" class="w-10 h-10 rounded-lg bg-emerald-600 text-lg flex items-center justify-center">⏱️</button>
-            <button onclick="toggleWidget('sound')" class="w-10 h-10 rounded-lg bg-rose-600 text-lg flex items-center justify-center">🎙️</button>
-            <button onclick="toggleWidget('picker')" class="w-10 h-10 rounded-lg bg-purple-600 text-lg flex items-center justify-center">🎰</button>
-            <button onclick="toggleWidget('symbols')" class="w-10 h-10 rounded-lg bg-amber-600 text-lg flex items-center justify-center">📣</button>
+        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3 rounded-2xl flex space-x-4 shadow-2xl z-30">
+            <button onclick="toggleWidget('clock')" class="w-12 h-12 rounded-xl bg-indigo-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🕒</button>
+            <button onclick="toggleWidget('timer')" class="w-12 h-12 rounded-xl bg-emerald-600 text-xl flex items-center justify-center transform hover:scale-110 transition">⏱️</button>
+            <button onclick="toggleWidget('sound')" class="w-12 h-12 rounded-xl bg-rose-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🎙️</button>
+            <button onclick="toggleWidget('picker')" class="w-12 h-12 rounded-xl bg-purple-600 text-xl flex items-center justify-center transform hover:scale-110 transition">🎰</button>
+            <button onclick="toggleWidget('symbols')" class="w-12 h-12 rounded-xl bg-amber-600 text-xl flex items-center justify-center transform hover:scale-110 transition">📣</button>
         </nav>
     </div>
 
-    <div class="w-[55%] h-full flex flex-col items-center justify-center text-center p-8" style="background-color: #1e293b;">
-        <div class="max-w-md bg-slate-950 p-8 rounded-3xl border border-white/10 shadow-2xl">
-            <span class="text-5xl">🏫</span>
-            <h2 class="text-2xl font-bold text-white mt-4 mb-2">Classroom Materials Portal</h2>
-            <p class="text-sm text-slate-400 mb-6">Google Sites security configuration prevents viewing content directly adjacent to hardware-enabled apps. Click below to instantly launch your custom dashboard portal!</p>
-<a href="https://sites.google.com/fsksurat.in/sciences-game-zone/home" target="_blank" class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">                Open Classroom Google Site ↗
-            </a>
-        </div>
-    </div>
-
     <script>
-        // Inline Audio Engine
+        // Audio Engine
         let audioCtx = null, isMuted = false, alarmId = null, ringing = false;
         function getCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
         function playBell() {
@@ -179,7 +169,7 @@
             if(isMuted) { clearInterval(alarmId); ringing = false; }
         }
 
-        // Widget Controls & Draggables
+        // Window Handlers
         function toggleWidget(id) { const t = document.getElementById('widget-' + id); if (t) t.classList.toggle('hidden'); }
         let maxZ = 20;
         function drag(el) {
@@ -195,13 +185,14 @@
         }
         document.querySelectorAll('.glass-widget').forEach(drag);
 
-        // Core Timers & Clocks
+        // Clock & Date Engine
         setInterval(() => {
             const d = new Date(), p = n => String(n).padStart(2, '0');
             document.getElementById('clock-digital-time').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
             document.getElementById('clock-calendar-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         }, 1000);
 
+        // Countdown Timer Engine
         let dur = 60, rem = 60, tId = null;
         function updateT() { document.getElementById('timer-display').textContent = `${String(Math.floor(rem / 60)).padStart(2,'0')}:${String(rem % 60).padStart(2,'0')}`; }
         function setTimer(s) { clearInterval(tId); tId = null; dur = s; rem = s; updateT(); }
@@ -214,7 +205,7 @@
         }
         function resetTimer() { clearInterval(tId); tId = null; rem = dur; updateT(); document.getElementById('btn-timer-start').textContent = "START"; }
 
-        // Audio Handler
+        // Live Audio Analysis Engine
         async function startAudioMeter() {
             getCtx();
             try {
@@ -239,10 +230,11 @@
                     requestAnimationFrame(frame);
                 }
                 frame();
-            } catch(e) { alert("Mic rejected."); }
+            } catch(e) { alert("Mic permission denied."); }
         }
         document.getElementById('sound-limit-slider').addEventListener('input', e => document.getElementById('limit-label').textContent = e.target.value + '%');
 
+        // Spin Engine
         function spinNames() {
             const names = document.getElementById('picker-names').value.split(',').map(n=>n.trim()).filter(n=>n);
             if(!names.length) return;
@@ -250,7 +242,7 @@
             function roll() { box.textContent = names[Math.floor(Math.random()*names.length)]; if(c++ < 10) setTimeout(roll, 80); }
             roll();
         }
-        function setSymbol(btn, name) {
+        function setSymbol(btn) {
             document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('border-indigo-500', 'bg-slate-800'));
             btn.classList.add('border-indigo-500', 'bg-slate-800');
         }
