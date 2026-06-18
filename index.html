@@ -59,6 +59,18 @@
         .bg-transition {
             transition: background-image 0.5s ease-in-out;
         }
+
+        /* Custom Scrollbar Styling for Scrollable Panels */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 99px;
+        }
     </style>
 </head>
 <body id="app-body" class="w-full h-full relative select-none bg-transition bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80');">
@@ -174,7 +186,54 @@
             </div>
         </div>
 
-        <!-- 6. SETTINGS & BACKGROUNDS WIDGET (NEW) -->
+        <!-- 6. STICKY NOTES WIDGET -->
+        <div id="widget-notes" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 630px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-yellow-300 tracking-wider">📌 STICKY NOTE</span>
+                <button onclick="toggleWidget('notes')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+            </div>
+            <div class="p-4 flex flex-col">
+                <!-- Sticky notepad container -->
+                <div id="sticky-pad" class="w-full rounded-2xl p-3 bg-yellow-400/20 border border-yellow-500/30 transition-colors duration-300">
+                    <textarea id="sticky-content" placeholder="Type a reminder here..." 
+                              class="w-full bg-transparent text-white text-xs font-medium h-32 resize-none outline-none placeholder-white/30 custom-scrollbar"
+                              oninput="saveStickyNote()"></textarea>
+                </div>
+                <!-- Color customization triggers -->
+                <div class="flex items-center justify-between mt-3 px-1">
+                    <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Background:</span>
+                    <div class="flex space-x-1.5">
+                        <button onclick="setStickyColor('yellow')" class="w-4 h-4 rounded-full bg-yellow-400 border border-white/20 hover:scale-110 transition"></button>
+                        <button onclick="setStickyColor('pink')" class="w-4 h-4 rounded-full bg-rose-400 border border-white/20 hover:scale-110 transition"></button>
+                        <button onclick="setStickyColor('green')" class="w-4 h-4 rounded-full bg-emerald-400 border border-white/20 hover:scale-110 transition"></button>
+                        <button onclick="setStickyColor('blue')" class="w-4 h-4 rounded-full bg-sky-400 border border-white/20 hover:scale-110 transition"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. AGENDA WIDGET -->
+        <div id="widget-agenda" class="absolute w-[320px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 630px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-teal-300 tracking-wider">📋 DAILY AGENDA</span>
+                <button onclick="toggleWidget('agenda')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+            </div>
+            <div class="p-4 flex flex-col">
+                <!-- Agenda Input Field -->
+                <div class="flex space-x-2 mb-3">
+                    <input type="text" id="agenda-input" placeholder="Add custom lesson item..." 
+                           class="flex-1 bg-slate-950/80 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-teal-500 transition placeholder-slate-500"
+                           onkeypress="handleAgendaKey(event)">
+                    <button onclick="addAgendaItem()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">Add</button>
+                </div>
+                <!-- Agenda Checklist Container -->
+                <div id="agenda-list-container" class="max-h-48 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                    <!-- Dynamic Items render here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. SETTINGS & BACKGROUNDS WIDGET -->
         <div id="widget-settings" class="absolute w-80 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; right: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-sky-300 tracking-wider">⚙️ DASHBOARD SETTINGS</span>
@@ -218,29 +277,37 @@
             </div>
         </div>
 
-        <!-- CONTROL PANEL DOCKBAR WITH NAMES UNDER ICONS -->
-        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-5 shadow-3xl z-30">
-            <button onclick="toggleWidget('clock')" class="flex flex-col items-center group transition transform hover:scale-105">
+        <!-- CONTROL PANEL DOCKBAR WITH LABELS -->
+        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-4 shadow-3xl z-30 max-w-[95%] overflow-x-auto custom-scrollbar">
+            <button onclick="toggleWidget('clock')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-indigo-600/90 hover:bg-indigo-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🕒</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Clock</span>
             </button>
-            <button onclick="toggleWidget('timer')" class="flex flex-col items-center group transition transform hover:scale-105">
+            <button onclick="toggleWidget('timer')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-emerald-600/90 hover:bg-emerald-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">⏱️</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Timer</span>
             </button>
-            <button onclick="toggleWidget('sound')" class="flex flex-col items-center group transition transform hover:scale-105">
+            <button onclick="toggleWidget('sound')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-rose-600/90 hover:bg-rose-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎙️</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Sound</span>
             </button>
-            <button onclick="toggleWidget('picker')" class="flex flex-col items-center group transition transform hover:scale-105">
+            <button onclick="toggleWidget('picker')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-purple-600/90 hover:bg-purple-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎰</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Spin</span>
             </button>
-            <button onclick="toggleWidget('symbols')" class="flex flex-col items-center group transition transform hover:scale-105">
+            <button onclick="toggleWidget('symbols')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-amber-600/90 hover:bg-amber-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📣</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Symbols</span>
             </button>
-            <button onclick="toggleWidget('settings')" class="flex flex-col items-center group transition transform hover:scale-105">
+            <button onclick="toggleWidget('notes')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
+                <div class="w-12 h-12 rounded-2xl bg-yellow-600/90 hover:bg-yellow-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📌</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Note</span>
+            </button>
+            <button onclick="toggleWidget('agenda')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
+                <div class="w-12 h-12 rounded-2xl bg-teal-600/90 hover:bg-teal-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📋</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Agenda</span>
+            </button>
+            <button onclick="toggleWidget('settings')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-sky-600/90 hover:bg-sky-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">⚙️</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Bg Edit</span>
             </button>
@@ -248,7 +315,7 @@
     </div>
 
     <script>
-        // Premium Custom Toast Notifications (Replaces ugly browser alert pops)
+        // Premium Custom Toast Notifications
         function showNotification(message, type = "info") {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -264,12 +331,10 @@
             
             container.appendChild(toast);
             
-            // Trigger animation
             setTimeout(() => {
                 toast.classList.remove('translate-y-2', 'opacity-0');
             }, 10);
             
-            // Auto dismiss toast after 3.5 seconds
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-[-10px]');
                 setTimeout(() => { toast.remove(); }, 300);
@@ -324,7 +389,7 @@
         function drag(el) {
             const h = el.querySelector('.drag-handle'); if (!h) return;
             h.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button') || e.target.closest('input')) return;
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return;
                 maxZ++; el.style.zIndex = maxZ;
                 let sX = e.clientX, sY = e.clientY, oL = el.offsetLeft, oT = el.offsetTop;
                 function move(m) { el.style.left = (oL + (m.clientX - sX)) + 'px'; el.style.top = (oT + (m.clientY - sY)) + 'px'; }
@@ -354,6 +419,7 @@
                         clearInterval(tId); 
                         tId = null; 
                         showNotification("Timer Complete! 🕒", "timer");
+                        triggerAlarm();
                         rem = dur; 
                     } else { 
                         rem--; 
@@ -417,17 +483,6 @@
             dark: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
         };
 
-        // Load saved background on startup
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedBg = localStorage.getItem('class_hub_background');
-            if (savedBg) {
-                applyBgStyle(savedBg);
-                if (!backgroundPresets[savedBg]) {
-                    document.getElementById('custom-bg-input').value = savedBg;
-                }
-            }
-        });
-
         function applyBgStyle(urlOrVal) {
             const body = document.getElementById('app-body');
             if (urlOrVal.startsWith('http') || urlOrVal.startsWith('data:')) {
@@ -435,7 +490,6 @@
             } else if (urlOrVal.startsWith('linear-gradient')) {
                 body.style.backgroundImage = urlOrVal;
             } else {
-                // If it is a clean shorthand preset
                 const targetUrl = backgroundPresets[urlOrVal] || urlOrVal;
                 if (targetUrl.startsWith('linear-gradient')) {
                     body.style.backgroundImage = targetUrl;
@@ -461,6 +515,150 @@
             localStorage.setItem('class_hub_background', inputVal);
             showNotification("Your custom Google background is live!", "success");
         }
+
+        // STICKY NOTE MECHANICS
+        const stickyColors = {
+            yellow: { container: 'bg-yellow-400/20', border: 'border-yellow-500/30' },
+            pink: { container: 'bg-rose-400/20', border: 'border-rose-500/30' },
+            green: { container: 'bg-emerald-400/20', border: 'border-emerald-500/30' },
+            blue: { container: 'bg-sky-400/20', border: 'border-sky-500/30' }
+        };
+
+        function setStickyColor(color) {
+            const pad = document.getElementById('sticky-pad');
+            // Remove previous color classes
+            Object.values(stickyColors).forEach(c => {
+                pad.classList.remove(c.container, c.border);
+            });
+            // Add new classes
+            pad.classList.add(stickyColors[color].container, stickyColors[color].border);
+            
+            localStorage.setItem('sticky_note_color', color);
+            showNotification(`Sticky note color changed to ${color}`, "success");
+        }
+
+        function saveStickyNote() {
+            const text = document.getElementById('sticky-content').value;
+            localStorage.setItem('sticky_note_text', text);
+        }
+
+        function loadStickyNote() {
+            const savedText = localStorage.getItem('sticky_note_text') || "";
+            const savedColor = localStorage.getItem('sticky_note_color') || "yellow";
+            
+            document.getElementById('sticky-content').value = savedText;
+            setStickyColor(savedColor);
+        }
+
+        // AGENDA CHECKLIST MECHANICS
+        let agendaItems = [];
+
+        function renderAgenda() {
+            const listContainer = document.getElementById('agenda-list-container');
+            listContainer.innerHTML = "";
+
+            if (agendaItems.length === 0) {
+                listContainer.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-4 font-semibold italic">No plans added yet for today!</div>`;
+                return;
+            }
+
+            agendaItems.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-900/60 border border-white/5 p-2 rounded-xl text-xs space-x-2";
+                
+                const checkedClass = item.completed ? "line-through text-slate-500" : "text-white";
+                const isCheckedAttr = item.completed ? "checked" : "";
+
+                row.innerHTML = `
+                    <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+                        <input type="checkbox" ${isCheckedAttr} onchange="toggleAgendaItem(${index})" 
+                               class="w-4 h-4 rounded-md border-white/10 text-teal-600 bg-slate-950 focus:ring-0 cursor-pointer">
+                        <span class="truncate font-semibold tracking-wide ${checkedClass}">${escapeHtml(item.text)}</span>
+                    </div>
+                    <button onclick="deleteAgendaItem(${index})" class="text-slate-400 hover:text-rose-400 transition text-xs pr-1 font-bold">✕</button>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
+
+        function addAgendaItem() {
+            const input = document.getElementById('agenda-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            agendaItems.push({ text: val, completed: false });
+            input.value = "";
+            saveAgenda();
+            renderAgenda();
+            showNotification("Agenda task added!", "success");
+        }
+
+        function handleAgendaKey(e) {
+            if (e.key === "Enter") {
+                addAgendaItem();
+            }
+        }
+
+        function toggleAgendaItem(index) {
+            agendaItems[index].completed = !agendaItems[index].completed;
+            saveAgenda();
+            renderAgenda();
+        }
+
+        function deleteAgendaItem(index) {
+            agendaItems.splice(index, 1);
+            saveAgenda();
+            renderAgenda();
+            showNotification("Agenda task removed.", "info");
+        }
+
+        function saveAgenda() {
+            localStorage.setItem('agenda_items', JSON.stringify(agendaItems));
+        }
+
+        function loadAgenda() {
+            const saved = localStorage.getItem('agenda_items');
+            if (saved) {
+                try {
+                    agendaItems = JSON.parse(saved);
+                } catch(e) {
+                    agendaItems = [];
+                }
+            } else {
+                agendaItems = [
+                    { text: "9:00 AM - Science Lab Introduction", completed: false },
+                    { text: "10:15 AM - Interactive Game Session", completed: false },
+                    { text: "11:30 AM - Clean up and Homework Check", completed: false }
+                ];
+            }
+            renderAgenda();
+        }
+
+        // HTML escaping utility helper
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Startup Logic Wrapper
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load custom background preference
+            const savedBg = localStorage.getItem('class_hub_background');
+            if (savedBg) {
+                applyBgStyle(savedBg);
+                if (!backgroundPresets[savedBg]) {
+                    document.getElementById('custom-bg-input').value = savedBg;
+                }
+            }
+
+            // Load Sticky Note and Agenda
+            loadStickyNote();
+            loadAgenda();
+        });
     </script>
 </body>
 </html>
