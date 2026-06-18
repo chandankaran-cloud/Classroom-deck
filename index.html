@@ -209,6 +209,15 @@
                         <button onclick="setStickyColor('blue')" class="w-4 h-4 rounded-full bg-sky-400 border border-white/20 hover:scale-110 transition"></button>
                     </div>
                 </div>
+                <!-- Font size customization triggers -->
+                <div class="flex items-center justify-between mt-3 px-1 border-t border-white/5 pt-2">
+                    <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Font Size:</span>
+                    <div class="flex space-x-2 items-center">
+                        <button onclick="changeStickyFontSize(-2)" class="bg-slate-800/80 hover:bg-slate-700/80 text-white rounded-lg px-2.5 py-1 text-[10px] font-bold transition border border-white/5 select-none">- A</button>
+                        <span id="sticky-font-label" class="text-[10px] text-slate-300 font-semibold select-none">12px</span>
+                        <button onclick="changeStickyFontSize(2)" class="bg-slate-800/80 hover:bg-slate-700/80 text-white rounded-lg px-2.5 py-1 text-[10px] font-bold transition border border-white/5 select-none">+ A</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -542,12 +551,35 @@
             localStorage.setItem('sticky_note_text', text);
         }
 
+        let stickyFontSize = 12;
+
+        function applyStickyFontSize() {
+            const content = document.getElementById('sticky-content');
+            if (content) {
+                content.style.fontSize = stickyFontSize + 'px';
+            }
+            const label = document.getElementById('sticky-font-label');
+            if (label) {
+                label.textContent = stickyFontSize + 'px';
+            }
+        }
+
+        function changeStickyFontSize(delta) {
+            stickyFontSize = Math.max(8, Math.min(36, stickyFontSize + delta));
+            applyStickyFontSize();
+            localStorage.setItem('sticky_note_font_size', stickyFontSize);
+        }
+
         function loadStickyNote() {
             const savedText = localStorage.getItem('sticky_note_text') || "";
             const savedColor = localStorage.getItem('sticky_note_color') || "yellow";
+            const savedSize = localStorage.getItem('sticky_note_font_size') || "12";
             
             document.getElementById('sticky-content').value = savedText;
             setStickyColor(savedColor);
+            
+            stickyFontSize = parseInt(savedSize, 10);
+            applyStickyFontSize();
         }
 
         // AGENDA CHECKLIST MECHANICS
