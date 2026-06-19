@@ -200,7 +200,10 @@
             </div>
             <div class="p-4">
                 <div id="picker-display" class="bg-slate-950/80 rounded-2xl h-12 flex items-center justify-center font-bold text-purple-300 text-base mb-3 border border-white/10 tracking-wide">Ready</div>
-                <textarea id="picker-names" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2 h-12 resize-none outline-none border border-white/5">Alex, Sam, Taylor, Jordan, Morgan</textarea>
+                <textarea id="picker-names" oninput="updateRandomizerCount()" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2 h-12 resize-none outline-none border border-white/5 custom-scrollbar">Alex, Sam, Taylor, Jordan, Morgan</textarea>
+                <div class="flex justify-between items-center text-[9px] text-slate-400 font-semibold px-1 mt-1">
+                    <span id="randomizer-count-badge">5 Names loaded</span>
+                </div>
                 <button onclick="spinNames()" class="w-full bg-purple-600 hover:bg-purple-500 transition text-white font-bold py-1.5 rounded-xl text-xs mt-2 tracking-wider shadow-lg">SPIN</button>
             </div>
         </div>
@@ -300,7 +303,7 @@
         </div>
 
         <!-- 8. RANDOM GROUP GENERATOR WIDGET -->
-        <div id="widget-groups" class="absolute w-[350px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 970px;">
+        <div id="widget-groups" class="absolute w-[360px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 970px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-pink-300 tracking-wider">👥 GROUP GENERATOR</span>
                 <div class="flex items-center space-x-2 z-30">
@@ -311,8 +314,12 @@
             </div>
             <div class="p-4 flex flex-col space-y-3">
                 <div>
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Students (comma-separated):</label>
-                    <textarea id="group-names-input" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2 h-14 resize-none outline-none border border-white/5 custom-scrollbar">Alex, Sam, Taylor, Jordan, Morgan, Bailey, Casey, Robin, Jesse, Jamie</textarea>
+                    <!-- Visual counter to provide instant Google Sheets paste confirmation feedback -->
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">Students (Paste list from Sheets):</label>
+                        <span id="student-count-badge" class="bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full">10 Loaded</span>
+                    </div>
+                    <textarea id="group-names-input" oninput="updateStudentCount()" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2.5 h-24 resize-none outline-none border border-white/5 custom-scrollbar">Alex, Sam, Taylor, Jordan, Morgan, Bailey, Casey, Robin, Jesse, Jamie</textarea>
                 </div>
                 
                 <div class="flex items-center justify-between bg-slate-950/40 p-2 rounded-xl border border-white/5">
@@ -333,7 +340,7 @@
         </div>
 
         <!-- 10. QR CODE GENERATOR WIDGET -->
-        <div id="widget-qr" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; left: 1310px;">
+        <div id="widget-qr" class="absolute w-[310px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; left: 1310px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-orange-300 tracking-wider">📱 QR CODE GENERATOR</span>
                 <div class="flex items-center space-x-2 z-30">
@@ -342,7 +349,7 @@
                     <button onclick="toggleWidget('qr')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
                 </div>
             </div>
-            <div class="p-4 flex flex-col space-y-3.5 items-center">
+            <div class="p-4 flex flex-col space-y-3.5">
                 <div class="w-full">
                     <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Enter URL or Message:</label>
                     <input type="text" id="qr-text-input" placeholder="https://sites.google.com/..." 
@@ -350,11 +357,37 @@
                            value="https://sites.google.com/fsksurat.in/sciences-game-zone/home"
                            onkeypress="handleQRKey(event)">
                 </div>
+
+                <!-- Custom Logo Customizer Controls -->
+                <div class="w-full bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+                    <label class="block text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">Center Brand Logo:</label>
+                    
+                    <div class="grid grid-cols-3 gap-1.5 mb-2">
+                        <!-- High Priority official Fountainhead School emblem option -->
+                        <button onclick="selectQRLogo('school-logo')" id="qr-logo-btn-official" class="qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold col-span-3 hover:bg-slate-800 transition">
+                            🏫 Fountainhead Logo
+                        </button>
+                        <button onclick="selectQRLogo('')" id="qr-logo-btn-none" class="qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition">None</button>
+                        <button onclick="selectQRLogo('🧪')" id="qr-logo-btn-sci" class="qr-logo-preset border border-white/5 bg-slate-950 text-[12px] py-1 rounded-lg hover:bg-slate-900 transition">🧪</button>
+                        <button onclick="selectQRLogo('🧬')" id="qr-logo-btn-bio" class="qr-logo-preset border border-white/5 bg-slate-950 text-[12px] py-1 rounded-lg hover:bg-slate-900 transition">🧬</button>
+                    </div>
+
+                    <!-- Custom link or emoji integration option -->
+                    <div class="flex flex-col space-y-1.5 border-t border-white/5 pt-2">
+                        <label class="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">Custom Central Image URL / Emoji:</label>
+                        <input type="text" id="qr-custom-logo-input" placeholder="Paste custom logo link or type Emoji..."
+                               class="w-full bg-slate-950 border border-white/10 text-white rounded-lg px-2.5 py-1 text-xs outline-none focus:border-orange-500 transition"
+                               oninput="applyCustomEmojiLogo()">
+                    </div>
+                </div>
+
                 <button onclick="createQR()" class="w-full bg-orange-600 hover:bg-orange-500 transition text-white font-bold py-1.5 rounded-xl text-xs tracking-wider shadow-lg">GENERATE QR</button>
                 
                 <!-- QR Code Dynamic Render Box -->
-                <div id="qr-display-wrapper" class="w-44 h-44 bg-white p-3 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner hidden">
-                    <div id="qrcode" class="w-full h-full"></div>
+                <div class="flex justify-center w-full">
+                    <div id="qr-display-wrapper" class="w-44 h-44 bg-white p-3 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner hidden">
+                        <div id="qrcode" class="w-full h-full"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -709,18 +742,40 @@
         }
         document.getElementById('sound-limit-slider').addEventListener('input', e => document.getElementById('limit-label').textContent = e.target.value + '%');
 
-        // Name Spinner
+        // Helpers to parse lists cleanly from Google Sheets copy-paste actions
+        function cleanSplitList(textVal) {
+            // Regex handles carriage returns, newlines, tabs, commas, and semicolons cleanly
+            return textVal
+                .split(/[\r\n\t,;]+/)
+                // Strip spreadsheet-wrapping quotes like "Jamie" or 'Sam'
+                .map(n => n.replace(/^["']|["']$/g, '').trim())
+                .filter(n => n.length > 0);
+        }
+
+        // Live list counters to provide instant spreadsheet visual feedback
+        function updateStudentCount() {
+            const count = cleanSplitList(document.getElementById('group-names-input').value).length;
+            document.getElementById('student-count-badge').textContent = `${count} Loaded`;
+        }
+
+        function updateRandomizerCount() {
+            const count = cleanSplitList(document.getElementById('picker-names').value).length;
+            document.getElementById('randomizer-count-badge').textContent = `${count} Names loaded`;
+        }
+
+        // Name Spinner (Robust Parsing Engine upgraded for sheets copying)
         function spinNames() {
-            const names = document.getElementById('picker-names').value.split(',').map(n=>n.trim()).filter(n=>n);
-            if(!names.length) return;
+            const names = cleanSplitList(document.getElementById('picker-names').value);
+            if(!names.length) {
+                showNotification("Please enter or paste names first!", "error");
+                return;
+            }
             let c = 0, box = document.getElementById('picker-display');
             function roll() { box.textContent = names[Math.floor(Math.random()*names.length)]; if(c++ < 10) setTimeout(roll, 80); }
             roll();
         }
 
-        // Random Group Generator Engine
-        let targetGroupCount = 3;
-
+        // Random Group Generator Engine (Robust Sheets Parser Implementation)
         function adjustGroupCount(delta) {
             targetGroupCount = Math.max(2, Math.min(12, targetGroupCount + delta));
             document.getElementById('group-count-label').textContent = targetGroupCount;
@@ -731,19 +786,20 @@
             const inputVal = document.getElementById('group-names-input').value;
             localStorage.setItem('group_names_input', inputVal);
             
-            let names = inputVal.split(',').map(n => n.trim()).filter(n => n);
+            // ROBUST PARSER: Handles Tab columns, linebreaks, and Excel cell formatting effortlessly
+            let names = cleanSplitList(inputVal);
             if (names.length === 0) {
-                showNotification("Please enter some names first!", "error");
+                showNotification("Please paste student names or enter them first!", "error");
                 return;
             }
 
-            // Shuffle array (Fisher-Yates)
+            // Shuffle array (Fisher-Yates algorithm)
             for (let i = names.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [names[i], names[j]] = [names[j], names[i]];
             }
 
-            // Initialize groups
+            // Initialize balanced groups
             const groups = Array.from({ length: targetGroupCount }, () => []);
 
             // Distribute round-robin to ensure balanced groups
@@ -771,8 +827,55 @@
             showNotification(`Created ${targetGroupCount} groups! 👥`, "success");
         }
 
-        // QR Code Generator Engine
+        // QR Code Generator Engine with Custom Center Brand Logo Support
         let qrGeneratorInstance = null;
+        let selectedQRLogo = 'school-logo'; // DEFAULT to official Fountainhead School emblem
+
+        function selectQRLogo(logoChar) {
+            selectedQRLogo = logoChar;
+            
+            // Clear custom logo text input if selecting preset
+            if (logoChar !== 'custom') {
+                document.getElementById('qr-custom-logo-input').value = "";
+            }
+
+            // Highlight chosen preset buttons visually
+            document.querySelectorAll('.qr-logo-preset').forEach(btn => {
+                btn.className = "qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition";
+            });
+
+            const btnMap = {
+                '': 'qr-logo-btn-none',
+                'school-logo': 'qr-logo-btn-official',
+                '🧪': 'qr-logo-btn-sci',
+                '🧬': 'qr-logo-btn-bio'
+            };
+
+            const activeId = btnMap[logoChar];
+            if (activeId) {
+                const activeBtn = document.getElementById(activeId);
+                if (activeBtn) {
+                    activeBtn.className = "qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold";
+                }
+            }
+
+            // Live refresh QR code design
+            createQR();
+        }
+
+        function applyCustomEmojiLogo() {
+            const customVal = document.getElementById('qr-custom-logo-input').value.trim();
+            if (customVal) {
+                selectedQRLogo = customVal;
+                // Unhighlight all preset icons
+                document.querySelectorAll('.qr-logo-preset').forEach(btn => {
+                    btn.className = "qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition";
+                });
+                createQR();
+            } else {
+                selectQRLogo('school-logo'); // default to school logo if cleared
+            }
+        }
 
         function createQR() {
             const val = document.getElementById('qr-text-input').value.trim();
@@ -789,18 +892,99 @@
             wrapper.classList.remove('hidden');
             
             try {
+                // Generate base QR utilizing High Error Correction (H Level)
+                // This ensures up to 30% center occlusion/logo styling works flawlessly
                 qrGeneratorInstance = new QRCode(qrcodeDiv, {
                     text: val,
                     width: 152,
                     height: 152,
-                    colorDark : "#0f172a",
+                    colorDark : "#0c111d",
                     colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.H
                 });
-                showNotification("QR Code generated successfully! 📱", "success");
+                
                 localStorage.setItem('last_qr_text', val);
+
+                // Add slight wait frame for QRCode client library to render vector canvas correctly
+                setTimeout(() => {
+                    const canvas = qrcodeDiv.querySelector('canvas');
+                    if (canvas && selectedQRLogo !== '') {
+                        const ctx = canvas.getContext('2d');
+                        const size = canvas.width;
+                        
+                        // Calculate center coordinates
+                        const logoSize = size * 0.25; // Compact size is safely covered by correction margins
+                        const x = (size - logoSize) / 2;
+                        const y = (size - logoSize) / 2;
+                        
+                        // Render crisp safety margin border/circle for central logo
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.arc(size / 2, size / 2, (logoSize / 2) + 4, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        if (selectedQRLogo === 'school-logo') {
+                            // Load official Fountainhead School Square Icon logo
+                            const logoImg = new Image();
+                            logoImg.crossOrigin = "anonymous";
+                            // Official website square favicon avatar link
+                            logoImg.src = "https://www.fountainheadschool.org/wp-content/uploads/2020/06/cropped-FH-Favicon-192x192.png";
+                            
+                            logoImg.onload = function() {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
+                                ctx.clip();
+                                ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+                                ctx.restore();
+                            };
+                            
+                            logoImg.onerror = function() {
+                                // Dynamic backup emoji fallback if school domain is inaccessible/offline
+                                ctx.fillStyle = '#f97316';
+                                ctx.beginPath();
+                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
+                                ctx.fill();
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = `bold ${logoSize * 0.45}px system-ui, sans-serif`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText("FH", size / 2, size / 2 + 1);
+                            };
+                        } else if (selectedQRLogo.startsWith('http')) {
+                            // Support for any custom image URL pasted by the teacher
+                            const customImg = new Image();
+                            customImg.crossOrigin = "anonymous";
+                            customImg.src = selectedQRLogo;
+                            
+                            customImg.onload = function() {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
+                                ctx.clip();
+                                ctx.drawImage(customImg, x, y, logoSize, logoSize);
+                                ctx.restore();
+                            };
+                        } else {
+                            // Emoji text-rendering preset fallback
+                            ctx.fillStyle = '#f97316'; // Fountainhead signature orange
+                            ctx.beginPath();
+                            ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            ctx.fillStyle = '#ffffff';
+                            const fontFactor = selectedQRLogo.length > 2 ? 0.35 : 0.52;
+                            ctx.font = `bold ${logoSize * fontFactor}px system-ui, -apple-system, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(selectedQRLogo, size / 2, (size / 2) + 1);
+                        }
+                    }
+                }, 80);
+
+                showNotification("QR Code generated with central brand icon! 📱", "success");
             } catch (e) {
-                showNotification("Failed to generate QR Code.", "error");
+                showNotification("Failed to generate custom QR Code.", "error");
                 console.error(e);
             }
         }
@@ -1084,6 +1268,10 @@
             loadWidgetScales();
             loadStickyNote();
             loadAgenda();
+
+            // Run initial parser sweeps to display visual counters
+            updateStudentCount();
+            updateRandomizerCount();
         });
     </script>
 </body>
