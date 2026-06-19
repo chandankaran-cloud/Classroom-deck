@@ -6,6 +6,8 @@
     <title>Classroom Hub Dashboard</title>
     <!-- Tailwind CSS for UI Layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code Generator Client-side Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap');
         
@@ -59,10 +61,10 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
         
-        /* Traffic Light Glow Animations */
-        .light-glow-green { box-shadow: 0 0 25px #22c55e; }
-        .light-glow-yellow { box-shadow: 0 0 25px #eab308; }
-        .light-glow-red { box-shadow: 0 0 25px #ef4444; }
+        /* Voice Chart LED Glowing Animations */
+        .led-active-green { background-color: #22c55e !important; box-shadow: 0 0 12px #22c55e; }
+        .led-active-yellow { background-color: #eab308 !important; box-shadow: 0 0 12px #eab308; }
+        .led-active-red { background-color: #ef4444 !important; box-shadow: 0 0 16px #ef4444; }
 
         /* Dynamic background transition */
         .bg-transition {
@@ -136,10 +138,10 @@
             </div>
         </div>
 
-        <!-- 3. TRAFFIC LIGHT SOUND LEVEL METER -->
-        <div id="widget-sound" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 50px;">
+        <!-- 3. VOICE LEVEL CHART (UPGRADED SOUND LEVEL METER) -->
+        <div id="widget-sound" class="absolute w-80 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-rose-300 tracking-wider">🎙️ TRAFFIC LIGHT</span>
+                <span class="text-xs font-bold text-rose-300 tracking-wider">🎙️ VOICE LEVEL METER</span>
                 <div class="flex items-center space-x-2 z-30">
                     <button onclick="changeWidgetScale('sound', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('sound', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
@@ -151,14 +153,33 @@
                     <button onclick="startAudioMeter()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-5 py-2.5 rounded-2xl text-xs tracking-wider shadow-lg">Activate Mic Sensor</button>
                 </div>
                 <div id="mic-active-container" class="w-full hidden flex flex-col items-center">
-                    <div class="w-40 bg-slate-950/80 p-2.5 rounded-2xl flex justify-around items-center border border-white/10 mb-4">
-                        <div id="light-red" class="w-9 h-9 rounded-full bg-rose-950/40 border border-rose-900/50 transition duration-300"></div>
-                        <div id="light-yellow" class="w-9 h-9 rounded-full bg-amber-950/40 border border-amber-900/50 transition duration-300"></div>
-                        <div id="light-green" class="w-9 h-9 rounded-full bg-emerald-950/40 border border-emerald-900/50 transition duration-300"></div>
+                    <!-- LED Voice Chart Container -->
+                    <div class="w-full bg-slate-950/80 p-3.5 rounded-2xl border border-white/10 mb-4 flex flex-col items-center">
+                        <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Sound Level Monitor</div>
+                        
+                        <!-- 10 Responsive LED Segments -->
+                        <div class="flex space-x-1.5 w-full h-7 justify-between items-center px-1" id="led-container">
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                            <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
+                        </div>
+
+                        <!-- Real-time Voice Mode Label Badge -->
+                        <div id="voice-level-label" class="mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300">
+                            🤫 SILENCE
+                        </div>
                     </div>
+
                     <div class="w-full px-1 mb-3">
                         <div class="flex justify-between text-[10px] text-slate-300 font-bold mb-1.5 tracking-wider">
-                            <span>ALERT THRESHOLD:</span> <span id="limit-label" class="text-rose-400">70%</span>
+                            <span>ALERT THRESHOLD:</span> <span id="limit-label" class="text-rose-400 font-extrabold">70%</span>
                         </div>
                         <input type="range" id="sound-limit-slider" min="10" max="100" value="70" class="w-full h-1 bg-slate-800 appearance-none cursor-pointer accent-rose-500 rounded-lg">
                     </div>
@@ -290,7 +311,7 @@
             </div>
             <div class="p-4 flex flex-col space-y-3">
                 <div>
-                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Students (separated by commas, semicolons or new lines):</label>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Students (comma-separated):</label>
                     <textarea id="group-names-input" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2 h-14 resize-none outline-none border border-white/5 custom-scrollbar">Alex, Sam, Taylor, Jordan, Morgan, Bailey, Casey, Robin, Jesse, Jamie</textarea>
                 </div>
                 
@@ -307,6 +328,33 @@
                 
                 <div id="groups-result-container" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1 pt-1">
                     <div class="text-[11px] text-slate-500 text-center py-4 font-semibold italic">Ready to organize your teams!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. QR CODE GENERATOR WIDGET -->
+        <div id="widget-qr" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; left: 1310px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-orange-300 tracking-wider">📱 QR CODE GENERATOR</span>
+                <div class="flex items-center space-x-2 z-30">
+                    <button onclick="changeWidgetScale('qr', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
+                    <button onclick="changeWidgetScale('qr', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
+                    <button onclick="toggleWidget('qr')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+                </div>
+            </div>
+            <div class="p-4 flex flex-col space-y-3.5 items-center">
+                <div class="w-full">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Enter URL or Message:</label>
+                    <input type="text" id="qr-text-input" placeholder="https://sites.google.com/..." 
+                           class="w-full bg-slate-950/80 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-orange-500 transition placeholder-slate-600"
+                           value="https://sites.google.com/fsksurat.in/sciences-game-zone/home"
+                           onkeypress="handleQRKey(event)">
+                </div>
+                <button onclick="createQR()" class="w-full bg-orange-600 hover:bg-orange-500 transition text-white font-bold py-1.5 rounded-xl text-xs tracking-wider shadow-lg">GENERATE QR</button>
+                
+                <!-- QR Code Dynamic Render Box -->
+                <div id="qr-display-wrapper" class="w-44 h-44 bg-white p-3 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner hidden">
+                    <div id="qrcode" class="w-full h-full"></div>
                 </div>
             </div>
         </div>
@@ -378,6 +426,10 @@
                 <div class="w-12 h-12 rounded-2xl bg-pink-600/90 hover:bg-pink-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">👥</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Groups</span>
             </button>
+            <button onclick="toggleWidget('qr')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
+                <div class="w-12 h-12 rounded-2xl bg-orange-600/90 hover:bg-orange-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📱</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">QR Code</span>
+            </button>
             <button onclick="toggleWidget('symbols')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-amber-600/90 hover:bg-amber-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">📣</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Symbols</span>
@@ -416,4 +468,623 @@
             let icon = "🔔";
             let colorClasses = "bg-slate-900 border-white/10 text-white";
             if (type === "success") { icon = "✅"; colorClasses = "bg-emerald-950/90 border-emerald-500/30 text-emerald-300"; }
-            if (type === "error") { icon = "❌"; colorClasses = "bg-rose-950/90 border-rose-500/30 text-rose-300";
+            if (type === "error") { icon = "❌"; colorClasses = "bg-rose-950/90 border-rose-500/30 text-rose-300"; }
+            if (type === "timer") { icon = "⏱️"; colorClasses = "bg-amber-950/90 border-amber-500/30 text-amber-300 animate-bounce"; }
+
+            toast.className = `flex items-center space-x-3 px-5 py-3 rounded-2xl border ${colorClasses} shadow-2xl transition duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm`;
+            toast.innerHTML = `<span class="text-lg">${icon}</span> <span class="text-xs font-bold tracking-wide">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3500);
+        }
+
+        // Dynamic Scaling State Control for Individual Widgets
+        let widgetScales = {
+            clock: 1.0,
+            timer: 1.0,
+            sound: 1.0,
+            picker: 1.0,
+            symbols: 1.0,
+            notes: 1.0,
+            agenda: 1.0,
+            settings: 1.0,
+            groups: 1.0,
+            qr: 1.0
+        };
+
+        // Initialize scales
+        function loadWidgetScales() {
+            const saved = localStorage.getItem('widget_scales');
+            if (saved) {
+                try {
+                    widgetScales = { ...widgetScales, ...JSON.parse(saved) };
+                } catch(e) {}
+            }
+            Object.keys(widgetScales).forEach(id => {
+                applyWidgetScale(id);
+            });
+        }
+
+        function applyWidgetScale(id) {
+            const el = document.getElementById('widget-' + id);
+            if (el) {
+                el.style.setProperty('--widget-scale', widgetScales[id]);
+            }
+        }
+
+        function changeWidgetScale(id, delta) {
+            widgetScales[id] = Math.max(0.5, Math.min(2.5, parseFloat((widgetScales[id] + delta).toFixed(1))));
+            applyWidgetScale(id);
+            localStorage.setItem('widget_scales', JSON.stringify(widgetScales));
+        }
+
+        // Audio Engine Setup
+        let audioCtx = null, isMuted = false, alarmId = null, ringing = false;
+        function getCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+        
+        function playBell() {
+            if (isMuted) return;
+            try {
+                const ctx = getCtx(), now = ctx.currentTime;
+                [587.33, 880].forEach((f, i) => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.frequency.setValueAtTime(f, now);
+                    g.gain.setValueAtTime(i === 0 ? 0.2 : 0.08, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(now); o.stop(now + 0.6);
+                });
+            } catch(e){}
+        }
+
+        function triggerAlarm() {
+            if (ringing) return; ringing = true; playBell();
+            alarmId = setInterval(playBell, 600);
+            
+            // ALARM BELL DURATION TO EXACTLY 3 SECONDS
+            setTimeout(() => { clearInterval(alarmId); alarmId = null; ringing = false; }, 3000);
+        }
+
+        // Elegant chime arpeggio melody to capture student attention gently
+        function playAttentionChime() {
+            if (isMuted) return;
+            try {
+                const ctx = getCtx();
+                const now = ctx.currentTime;
+                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 notes
+                freqs.forEach((f, i) => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.frequency.setValueAtTime(f, now + i * 0.1);
+                    g.gain.setValueAtTime(0.08, now + i * 0.1);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.8);
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    o.start(now + i * 0.1);
+                    o.stop(now + i * 0.1 + 0.8);
+                });
+            } catch(e){}
+        }
+
+        function toggleBellMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('btn-bell-mute');
+            btn.textContent = isMuted ? "🔇 BELL MUTED" : "🔊 BELL ACTIVE";
+            btn.className = isMuted ? "w-full py-1.5 text-[10px] font-bold rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 tracking-widest" : "w-full py-1.5 text-[10px] font-bold rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 tracking-widest";
+            if(isMuted) { clearInterval(alarmId); ringing = false; }
+            showNotification(isMuted ? "Bell Sound Muted" : "Bell Sound Activated", "info");
+        }
+
+        // Draggable Widget Code
+        function toggleWidget(id) { 
+            const t = document.getElementById('widget-' + id); 
+            if (t) {
+                t.classList.toggle('hidden'); 
+            }
+        }
+        
+        let maxZ = 20;
+        function drag(el) {
+            const h = el.querySelector('.drag-handle'); if (!h) return;
+            h.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) return;
+                maxZ++; el.style.zIndex = maxZ;
+                let sX = e.clientX, sY = e.clientY, oL = el.offsetLeft, oT = el.offsetTop;
+                function move(m) { el.style.left = (oL + (m.clientX - sX)) + 'px'; el.style.top = (oT + (m.clientY - sY)) + 'px'; }
+                function stop() { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); }
+                document.addEventListener('mousemove', move); document.addEventListener('mouseup', stop);
+            });
+        }
+        document.querySelectorAll('.glass-widget').forEach(drag);
+
+        // Clock & Calendar
+        setInterval(() => {
+            const d = new Date(), p = n => String(n).padStart(2, '0');
+            document.getElementById('clock-digital-time').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+            document.getElementById('clock-calendar-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        }, 1000);
+
+        // Timer Code
+        let dur = 60, rem = 60, tId = null;
+        function updateT() { document.getElementById('timer-display').textContent = `${String(Math.floor(rem / 60)).padStart(2,'0')}:${String(rem % 60).padStart(2,'0')}`; }
+        function setTimer(s) { clearInterval(tId); tId = null; dur = s; rem = s; updateT(); showNotification(`Timer set to ${s/60} Minute(s)`, "info"); }
+        function toggleTimer() {
+            if (tId) { clearInterval(tId); tId = null; document.getElementById('btn-timer-start').textContent = "START"; }
+            else {
+                document.getElementById('btn-timer-start').textContent = "PAUSE";
+                tId = setInterval(() => { 
+                    if (rem <= 1) { 
+                        clearInterval(tId); 
+                        tId = null; 
+                        showNotification("Timer Complete! 🕒", "timer");
+                        triggerAlarm();
+                        rem = dur; 
+                    } else { 
+                        rem--; 
+                    } 
+                    updateT(); 
+                }, 1000);
+            }
+        }
+        function resetTimer() { clearInterval(tId); tId = null; rem = dur; updateT(); document.getElementById('btn-timer-start').textContent = "START"; }
+
+        // Upgraded Audio Analyzer (LED Level Chart)
+        async function startAudioMeter() {
+            getCtx();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const ctx = getCtx(), src = ctx.createMediaStreamSource(stream), az = ctx.createAnalyser();
+                az.fftSize = 64; src.connect(az);
+                document.getElementById('mic-btn-container').classList.add('hidden');
+                document.getElementById('mic-active-container').classList.remove('hidden');
+                
+                const data = new Uint8Array(az.frequencyBinCount);
+                const leds = document.querySelectorAll('#led-container .led-seg');
+                const label = document.getElementById('voice-level-label');
+                const s = document.getElementById('sound-limit-slider');
+                
+                showNotification("Voice Level Chart Activated!", "success");
+
+                function frame() {
+                    az.getByteFrequencyData(data);
+                    
+                    // Convert frequency amplitudes smoothly to a 0-100 percentage
+                    let pct = Math.min(Math.round((data.reduce((a, b) => a + b, 0) / data.length / 110) * 100), 100);
+                    let lim = parseInt(s.value);
+                    
+                    // Determine how many segments to light up (out of 10)
+                    let activeSegments = Math.round((pct / 100) * 10);
+                    
+                    // Update individual LED bars
+                    leds.forEach((led, i) => {
+                        // Reset all active classes
+                        led.className = "led-seg flex-1 h-full rounded bg-slate-800 transition duration-100";
+                        
+                        if (i < activeSegments) {
+                            if (i < 4) {
+                                // Green bars
+                                led.classList.add('led-active-green');
+                            } else if (i < 7) {
+                                // Yellow bars
+                                led.classList.add('led-active-yellow');
+                            } else {
+                                // Red bars
+                                led.classList.add('led-active-red');
+                            }
+                        }
+                    });
+
+                    // Update the human-readable classroom voice mode guide
+                    if (pct < 12) {
+                        label.textContent = "🤫 SILENCE";
+                        label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300";
+                    } else if (pct < 35) {
+                        label.textContent = "💬 WHISPER";
+                        label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-300 bg-emerald-500/10 border border-emerald-400/20 px-3 py-1 rounded-full uppercase transition-all duration-300";
+                    } else if (pct < lim) {
+                        label.textContent = "👥 NORMAL VOICE";
+                        label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300";
+                    } else {
+                        label.textContent = "🚨 TOO LOUD!";
+                        label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-full uppercase transition-all duration-300 animate-pulse";
+                    }
+
+                    // Sound Alert trigger
+                    if (pct >= lim) {
+                        triggerAlarm(); 
+                    }
+                    
+                    requestAnimationFrame(frame);
+                }
+                frame();
+            } catch(e) { showNotification("Microphone access denied or blocked.", "error"); }
+        }
+        document.getElementById('sound-limit-slider').addEventListener('input', e => document.getElementById('limit-label').textContent = e.target.value + '%');
+
+        // Name Spinner
+        function spinNames() {
+            const names = document.getElementById('picker-names').value.split(',').map(n=>n.trim()).filter(n=>n);
+            if(!names.length) return;
+            let c = 0, box = document.getElementById('picker-display');
+            function roll() { box.textContent = names[Math.floor(Math.random()*names.length)]; if(c++ < 10) setTimeout(roll, 80); }
+            roll();
+        }
+
+        // Random Group Generator Engine
+        let targetGroupCount = 3;
+
+        function adjustGroupCount(delta) {
+            targetGroupCount = Math.max(2, Math.min(12, targetGroupCount + delta));
+            document.getElementById('group-count-label').textContent = targetGroupCount;
+            localStorage.setItem('target_group_count', targetGroupCount);
+        }
+
+        function generateGroups() {
+            const inputVal = document.getElementById('group-names-input').value;
+            localStorage.setItem('group_names_input', inputVal);
+            
+            let names = inputVal.split(',').map(n => n.trim()).filter(n => n);
+            if (names.length === 0) {
+                showNotification("Please enter some names first!", "error");
+                return;
+            }
+
+            // Shuffle array (Fisher-Yates)
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+
+            // Initialize groups
+            const groups = Array.from({ length: targetGroupCount }, () => []);
+
+            // Distribute round-robin to ensure balanced groups
+            names.forEach((name, idx) => {
+                groups[idx % targetGroupCount].push(name);
+            });
+
+            // Render groups
+            const container = document.getElementById('groups-result-container');
+            container.innerHTML = '';
+
+            groups.forEach((group, idx) => {
+                if (group.length === 0) return; // Skip empty groups
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bg-slate-900/60 border border-white/5 p-3 rounded-2xl';
+                groupDiv.innerHTML = `
+                    <div class="text-[10px] font-bold text-pink-300 tracking-wider uppercase mb-1.5 border-b border-white/5 pb-1">Group ${idx + 1}</div>
+                    <div class="text-xs text-white/90 font-medium flex flex-wrap gap-1.5">
+                        ${group.map(name => `<span class="bg-slate-950/60 px-2.5 py-1 rounded-lg text-[10px] border border-white/5">${escapeHtml(name)}</span>`).join('')}
+                    </div>
+                `;
+                container.appendChild(groupDiv);
+            });
+
+            showNotification(`Created ${targetGroupCount} groups! 👥`, "success");
+        }
+
+        // QR Code Generator Engine
+        let qrGeneratorInstance = null;
+
+        function createQR() {
+            const val = document.getElementById('qr-text-input').value.trim();
+            if (!val) {
+                showNotification("Please enter some text or URL first!", "error");
+                return;
+            }
+            
+            const wrapper = document.getElementById('qr-display-wrapper');
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear old QR code
+            qrcodeDiv.innerHTML = "";
+            wrapper.classList.remove('hidden');
+            
+            try {
+                qrGeneratorInstance = new QRCode(qrcodeDiv, {
+                    text: val,
+                    width: 152,
+                    height: 152,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                showNotification("QR Code generated successfully! 📱", "success");
+                localStorage.setItem('last_qr_text', val);
+            } catch (e) {
+                showNotification("Failed to generate QR Code.", "error");
+                console.error(e);
+            }
+        }
+
+        function handleQRKey(e) {
+            if (e.key === 'Enter') createQR();
+        }
+
+        // Set symbols state and trigger giant overlay display
+        function setSymbol(btn, emoji, name) {
+            document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('border-amber-400/80', 'bg-slate-700/50', 'scale-105'));
+            btn.classList.add('border-amber-400/80', 'bg-slate-700/50', 'scale-105');
+            triggerGiantSymbol(emoji, name);
+        }
+
+        function triggerGiantSymbol(emoji, name) {
+            const overlay = document.getElementById('giant-symbol-overlay');
+            const content = document.getElementById('giant-symbol-content');
+            const emEl = document.getElementById('giant-symbol-emoji');
+            const tiEl = document.getElementById('giant-symbol-title');
+
+            emEl.textContent = emoji;
+            tiEl.textContent = name;
+
+            // Adapt text colors and dynamic text glow dropshadows based on selection
+            if (name === "SILENCE") {
+                tiEl.className = "text-5xl md:text-8xl font-black text-rose-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
+                emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(244,63,94,0.7)] animate-bounce select-none";
+            }
+            else if (name === "WHISPER") {
+                tiEl.className = "text-5xl md:text-8xl font-black text-amber-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
+                emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(245,158,11,0.7)] animate-bounce select-none";
+            }
+            else if (name === "PARTNER") {
+                tiEl.className = "text-5xl md:text-8xl font-black text-emerald-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
+                emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(16,185,129,0.7)] animate-bounce select-none";
+            }
+            else {
+                tiEl.className = "text-5xl md:text-8xl font-black text-sky-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
+                emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(14,165,233,0.7)] animate-bounce select-none";
+            }
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                content.classList.remove('scale-90');
+            }, 10);
+
+            playAttentionChime();
+        }
+
+        function closeGiantSymbol() {
+            const overlay = document.getElementById('giant-symbol-overlay');
+            const content = document.getElementById('giant-symbol-content');
+            overlay.classList.add('opacity-0');
+            content.classList.add('scale-90');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        // Custom Background Engine
+        const backgroundPresets = {
+            beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
+            forest: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80',
+            space: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1920&q=80',
+            classroom: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1920&q=80',
+            dark: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
+        };
+
+        // Render Background logic
+        function applyBgStyle(urlOrVal) {
+            const body = document.getElementById('app-body');
+            if (urlOrVal.startsWith('http') || urlOrVal.startsWith('data:')) {
+                body.style.backgroundImage = `url('${urlOrVal}')`;
+            } else if (urlOrVal.startsWith('linear-gradient')) {
+                body.style.backgroundImage = urlOrVal;
+            } else {
+                const targetUrl = backgroundPresets[urlOrVal] || urlOrVal;
+                if (targetUrl.startsWith('linear-gradient')) {
+                    body.style.backgroundImage = targetUrl;
+                } else {
+                    body.style.backgroundImage = `url('${targetUrl}')`;
+                }
+            }
+        }
+
+        function changeBackgroundPreset(presetKey) {
+            applyBgStyle(presetKey);
+            localStorage.setItem('class_hub_background', presetKey);
+            showNotification(`Background preset "${presetKey}" applied!`, "success");
+        }
+
+        function applyCustomBackground() {
+            const inputVal = document.getElementById('custom-bg-input').value.trim();
+            if (!inputVal) {
+                showNotification("Please paste a valid image link.", "error");
+                return;
+            }
+            applyBgStyle(inputVal);
+            localStorage.setItem('class_hub_background', inputVal);
+            showNotification("Your custom background is live!", "success");
+        }
+
+        // STICKY NOTE MECHANICS
+        const stickyColors = {
+            yellow: { container: 'bg-yellow-400/20', border: 'border-yellow-500/30' },
+            pink: { container: 'bg-rose-400/20', border: 'border-rose-500/30' },
+            green: { container: 'bg-emerald-400/20', border: 'border-emerald-500/30' },
+            blue: { container: 'bg-sky-400/20', border: 'border-sky-500/30' }
+        };
+
+        function setStickyColor(color) {
+            const pad = document.getElementById('sticky-pad');
+            Object.values(stickyColors).forEach(c => {
+                pad.classList.remove(c.container, c.border);
+            });
+            pad.classList.add(stickyColors[color].container, stickyColors[color].border);
+            localStorage.setItem('sticky_note_color', color);
+            showNotification(`Sticky note color changed to ${color}`, "success");
+        }
+
+        function saveStickyNote() {
+            const text = document.getElementById('sticky-content').value;
+            localStorage.setItem('sticky_note_text', text);
+        }
+
+        let stickyFontSize = 12;
+
+        function applyStickyFontSize() {
+            const content = document.getElementById('sticky-content');
+            if (content) {
+                content.style.fontSize = stickyFontSize + 'px';
+            }
+            const label = document.getElementById('sticky-font-label');
+            if (label) {
+                label.textContent = stickyFontSize + 'px';
+            }
+        }
+
+        function changeStickyFontSize(delta) {
+            stickyFontSize = Math.max(8, Math.min(36, stickyFontSize + delta));
+            applyStickyFontSize();
+            localStorage.setItem('sticky_note_font_size', stickyFontSize);
+        }
+
+        function loadStickyNote() {
+            const savedText = localStorage.getItem('sticky_note_text') || "";
+            const savedColor = localStorage.getItem('sticky_note_color') || "yellow";
+            const savedSize = localStorage.getItem('sticky_note_font_size') || "12";
+            
+            document.getElementById('sticky-content').value = savedText;
+            setStickyColor(savedColor);
+            
+            stickyFontSize = parseInt(savedSize, 10);
+            applyStickyFontSize();
+        }
+
+        // AGENDA CHECKLIST MECHANICS
+        let agendaItems = [];
+
+        function renderAgenda() {
+            const listContainer = document.getElementById('agenda-list-container');
+            listContainer.innerHTML = "";
+
+            if (agendaItems.length === 0) {
+                listContainer.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-4 font-semibold italic">No plans added yet for today!</div>`;
+                return;
+            }
+
+            agendaItems.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-900/60 border border-white/5 p-2 rounded-xl text-xs space-x-2";
+                
+                const checkedClass = item.completed ? "line-through text-slate-500" : "text-white";
+                const isCheckedAttr = item.completed ? "checked" : "";
+
+                row.innerHTML = `
+                    <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+                        <input type="checkbox" ${isCheckedAttr} onchange="toggleAgendaItem(${index})" 
+                               class="w-4 h-4 rounded-md border-white/10 text-teal-600 bg-slate-950 focus:ring-0 cursor-pointer">
+                        <span class="truncate font-semibold tracking-wide ${checkedClass}">${escapeHtml(item.text)}</span>
+                    </div>
+                    <button onclick="deleteAgendaItem(${index})" class="text-slate-400 hover:text-rose-400 transition text-xs pr-1 font-bold">✕</button>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
+
+        function addAgendaItem() {
+            const input = document.getElementById('agenda-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            agendaItems.push({ text: val, completed: false });
+            input.value = "";
+            saveAgenda();
+            renderAgenda();
+            showNotification("Agenda task added!", "success");
+        }
+
+        // Listen for enter keys
+        function handleAgendaKey(e) {
+            if (e.key === "Enter") {
+                addAgendaItem();
+            }
+        }
+
+        function toggleAgendaItem(index) {
+            agendaItems[index].completed = !agendaItems[index].completed;
+            saveAgenda();
+            renderAgenda();
+        }
+
+        function deleteAgendaItem(index) {
+            agendaItems.splice(index, 1);
+            saveAgenda();
+            renderAgenda();
+            showNotification("Agenda task removed.", "info");
+        }
+
+        function saveAgenda() {
+            localStorage.setItem('agenda_items', JSON.stringify(agendaItems));
+        }
+
+        function loadAgenda() {
+            const saved = localStorage.getItem('agenda_items');
+            if (saved) {
+                try {
+                    agendaItems = JSON.parse(saved);
+                } catch(e) {
+                    agendaItems = [];
+                }
+            } else {
+                agendaItems = [
+                    { text: "9:00 AM - Science Lab Introduction", completed: false },
+                    { text: "10:15 AM - Interactive Game Session", completed: false },
+                    { text: "11:30 AM - Clean up and Homework Check", completed: false }
+                ];
+            }
+            renderAgenda();
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Startup Logic Wrapper
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedBg = localStorage.getItem('class_hub_background');
+            if (savedBg) {
+                applyBgStyle(savedBg);
+                if (!backgroundPresets[savedBg]) {
+                    document.getElementById('custom-bg-input').value = savedBg;
+                }
+            }
+
+            // Load saved settings for group generator
+            const savedNames = localStorage.getItem('group_names_input');
+            if (savedNames) {
+                document.getElementById('group-names-input').value = savedNames;
+            }
+            const savedCount = localStorage.getItem('target_group_count');
+            if (savedCount) {
+                targetGroupCount = parseInt(savedCount, 10);
+                document.getElementById('group-count-label').textContent = targetGroupCount;
+            }
+
+            // Load saved settings for QR Generator
+            const savedQR = localStorage.getItem('last_qr_text');
+            if (savedQR) {
+                document.getElementById('qr-text-input').value = savedQR;
+            }
+
+            // Load saved scales, Sticky Notes, and Agenda layout elements
+            loadWidgetScales();
+            loadStickyNote();
+            loadAgenda();
+        });
+    </script>
+</body>
+</html>
