@@ -927,6 +927,7 @@
             document.getElementById('student-count-badge').textContent = `${count} Loaded`;
         }
 
+        // Dynamic update for spin randomizer name count
         function updateRandomizerCount() {
             const count = cleanSplitList(document.getElementById('picker-names').value).length;
             document.getElementById('randomizer-count-badge').textContent = `${count} Names loaded`;
@@ -995,10 +996,10 @@
                 container.appendChild(groupDiv);
             });
 
-            showNotification(`Created ${targetGroupCount} groups! 👥`, "success");
+            showNotification("Balanced teams created successfully!", "success");
         }
 
-        // QR Code Generator Engine with Custom Center Brand Logo Support
+        // QR Code Generator Engine with Center Brand Logo Support
         let qrGeneratorInstance = null;
         let selectedQRLogo = 'school-logo'; // DEFAULT to official Fountainhead School emblem
 
@@ -1095,11 +1096,9 @@
                         ctx.fill();
 
                         if (selectedQRLogo === 'school-logo') {
-                            // Load official Fountainhead School Square Icon logo
+                            // Load custom Fountainhead School logo from your uploaded file (image_637f0b.png)
                             const logoImg = new Image();
-                            logoImg.crossOrigin = "anonymous";
-                            // Official website square favicon avatar link
-                            logoImg.src = "https://www.fountainheadschool.org/wp-content/uploads/2020/06/cropped-FH-Favicon-192x192.png";
+                            logoImg.src = "image_637f0b.png"; // Load local asset uploaded in prompt
                             
                             logoImg.onload = function() {
                                 ctx.save();
@@ -1111,8 +1110,8 @@
                             };
                             
                             logoImg.onerror = function() {
-                                // Dynamic backup emoji fallback if school domain is inaccessible/offline
-                                ctx.fillStyle = '#f97316';
+                                // Solid dynamic background color as immediate fallback
+                                ctx.fillStyle = '#0284c7'; // Elegant blue brand base
                                 ctx.beginPath();
                                 ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
                                 ctx.fill();
@@ -1153,7 +1152,7 @@
                     }
                 }, 80);
 
-                showNotification("QR Code generated with central brand icon! 📱", "success");
+                showNotification("QR Code generated with school logo! 📱", "success");
             } catch (e) {
                 showNotification("Failed to generate custom QR Code.", "error");
                 console.error(e);
