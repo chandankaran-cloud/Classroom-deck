@@ -776,6 +776,7 @@
             } catch(e){}
         }
 
+        // Toggle Bell audio state
         function toggleBellMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-bell-mute');
@@ -822,18 +823,7 @@
             if (tId) { clearInterval(tId); tId = null; document.getElementById('btn-timer-start').textContent = "START"; }
             else {
                 document.getElementById('btn-timer-start').textContent = "PAUSE";
-                tId = setInterval(() => { 
-                    if (rem <= 1) { 
-                        clearInterval(tId); 
-                        tId = null; 
-                        showNotification("Timer Complete! 🕒", "timer");
-                        triggerAlarm();
-                        rem = dur; 
-                    } else { 
-                        rem--; 
-                    } 
-                    updateT(); 
-                }, 1000);
+                tId = setInterval(() => { if (rem <= 1) { clearInterval(tId); tId = null; alert("Timer up!"); rem = dur; } else { rem--; } updateT(); }, 1000);
             }
         }
         function resetTimer() { clearInterval(tId); tId = null; rem = dur; updateT(); document.getElementById('btn-timer-start').textContent = "START"; }
@@ -1065,13 +1055,14 @@
             
             try {
                 // Generate base QR utilizing High Error Correction (H Level)
-                // This ensures up to 30% center occlusion/logo styling works flawlessly
+                // This ensures up to 30% center occlusion/logo styling works flawlessly.
+                // We make colorLight "transparent" to let our custom background logo shine through.
                 qrGeneratorInstance = new QRCode(qrcodeDiv, {
                     text: val,
                     width: 152,
                     height: 152,
                     colorDark : "#0c111d",
-                    colorLight : "#ffffff",
+                    colorLight : "transparent", // Keep QR light background transparent for background image logo
                     correctLevel : QRCode.CorrectLevel.H
                 });
                 
@@ -1084,42 +1075,42 @@
                         const ctx = canvas.getContext('2d');
                         const size = canvas.width;
                         
-                        // Calculate center coordinates
-                        const logoSize = size * 0.25; // Compact size is safely covered by correction margins
-                        const x = (size - logoSize) / 2;
-                        const y = (size - logoSize) / 2;
-                        
-                        // Render safety margin border/circle for central logo
-                        ctx.fillStyle = '#ffffff';
-                        ctx.beginPath();
-                        ctx.arc(size / 2, size / 2, (logoSize / 2) + 4, 0, 2 * Math.PI);
-                        ctx.fill();
-
+                        // Render school logo in the background (faded overlay behind QR dark modules)
                         if (selectedQRLogo === 'school-logo') {
-                            // Load custom Fountainhead School logo from your uploaded file (image_637f0b.png)
                             const logoImg = new Image();
-                            logoImg.src = "image_637f0b.png"; // Load local asset uploaded in prompt
+                            logoImg.src = "image_637f0b.png"; // Official uploaded school logo
                             
                             logoImg.onload = function() {
                                 ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
-                                ctx.clip();
-                                ctx.drawImage(logoImg, x, y, logoSize, logoSize);
+                                // Paint background elements behind the black QR segments
+                                ctx.globalCompositeOperation = 'destination-over';
+                                
+                                // Center coordinate values
+                                const pad = 12;
+                                const imgSize = size - (pad * 2);
+                                
+                                // Render official logo over a clean white background card
+                                ctx.fillStyle = '#ffffff';
+                                ctx.fillRect(0, 0, size, size);
+                                
+                                // Draw school logo in the background with subtle opacity
+                                ctx.globalAlpha = 0.28; // Calibrated transparent background level for crisp scan performance
+                                ctx.drawImage(logoImg, pad, pad, imgSize, imgSize);
                                 ctx.restore();
                             };
                             
                             logoImg.onerror = function() {
                                 // Solid dynamic background color as immediate fallback
-                                ctx.fillStyle = '#0284c7'; // Elegant blue brand base
-                                ctx.beginPath();
-                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
-                                ctx.fill();
+                                ctx.save();
+                                ctx.globalCompositeOperation = 'destination-over';
                                 ctx.fillStyle = '#ffffff';
-                                ctx.font = `bold ${logoSize * 0.45}px system-ui, sans-serif`;
-                                ctx.textAlign = 'center';
-                                ctx.textBaseline = 'middle';
-                                ctx.fillText("FH", size / 2, size / 2 + 1);
+                                ctx.fillRect(0, 0, size, size);
+                                ctx.fillStyle = '#0284c7';
+                                ctx.globalAlpha = 0.15;
+                                ctx.beginPath();
+                                ctx.arc(size / 2, size / 2, size / 3, 0, 2 * Math.PI);
+                                ctx.fill();
+                                ctx.restore();
                             };
                         } else if (selectedQRLogo.startsWith('http')) {
                             // Support for any custom image URL pasted by the teacher
@@ -1129,30 +1120,44 @@
                             
                             customImg.onload = function() {
                                 ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
-                                ctx.clip();
-                                ctx.drawImage(customImg, x, y, logoSize, logoSize);
+                                ctx.globalCompositeOperation = 'destination-over';
+                                ctx.fillStyle = '#ffffff';
+                                ctx.fillRect(0, 0, size, size);
+                                ctx.globalAlpha = 0.25;
+                                ctx.drawImage(customImg, 10, 10, size - 20, size - 20);
                                 ctx.restore();
                             };
                         } else {
                             // Emoji text-rendering preset fallback
-                            ctx.fillStyle = '#f97316'; // Fountainhead signature orange
-                            ctx.beginPath();
-                            ctx.arc(size / 2, size / 2, logoSize / 2, 0, 2 * Math.PI);
-                            ctx.fill();
-                            
+                            ctx.save();
+                            ctx.globalCompositeOperation = 'destination-over';
                             ctx.fillStyle = '#ffffff';
-                            const fontFactor = selectedQRLogo.length > 2 ? 0.35 : 0.52;
-                            ctx.font = `bold ${logoSize * fontFactor}px system-ui, -apple-system, sans-serif`;
+                            ctx.fillRect(0, 0, size, size);
+                            
+                            ctx.fillStyle = '#f97316';
+                            ctx.globalAlpha = 0.15;
+                            ctx.font = `bold ${size * 0.5}px system-ui, -apple-system, sans-serif`;
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
-                            ctx.fillText(selectedQRLogo, size / 2, (size / 2) + 1);
+                            ctx.fillText(selectedQRLogo, size / 2, size / 2);
+                            ctx.restore();
+                        }
+                    } else {
+                        // Plain solid white background if logo is disabled
+                        const canvas = qrcodeDiv.querySelector('canvas');
+                        if (canvas) {
+                            const ctx = canvas.getContext('2d');
+                            const size = canvas.width;
+                            ctx.save();
+                            ctx.globalCompositeOperation = 'destination-over';
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, size, size);
+                            ctx.restore();
                         }
                     }
-                }, 80);
+                }, 100);
 
-                showNotification("QR Code generated with school logo! 📱", "success");
+                showNotification("QR Code generated with background brand watermark! 📱", "success");
             } catch (e) {
                 showNotification("Failed to generate custom QR Code.", "error");
                 console.error(e);
@@ -1369,6 +1374,7 @@
             renderAgenda();
         }
 
+        // Delete agenda item
         function deleteAgendaItem(index) {
             agendaItems.splice(index, 1);
             saveAgenda();
