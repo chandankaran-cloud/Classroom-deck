@@ -9,7 +9,7 @@
     <!-- QR Code Generator Client-side Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&family=Share+Tech+Mono&display=swap');
         
         html, body {
             margin: 0 !important;
@@ -95,23 +95,75 @@
 </head>
 <body id="app-body" class="w-full h-full relative select-none bg-transition bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80');">
 
+    <!-- Whiteboard Overlay Canvas Layer -->
+    <div id="whiteboard-layer" class="absolute inset-0 z-10 hidden pointer-events-none">
+        <canvas id="wb-canvas" class="w-full h-full pointer-events-auto cursor-crosshair"></canvas>
+    </div>
+
     <!-- Soft dark dimming overlay to keep controls completely readable -->
     <div class="absolute inset-0 bg-slate-950/20 backdrop-blur-[0.5px] pointer-events-none z-0"></div>
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-none space-y-2"></div>
 
-    <div class="w-full h-full relative overflow-hidden p-6 z-10">
+    <div class="w-full h-full relative overflow-hidden p-6 z-20 pointer-events-none">
         
-        <div class="text-center pt-2">
+        <div class="text-center pt-2 select-none">
             <h1 class="text-sm font-extrabold text-white/90 tracking-widest drop-shadow-lg">FS CLASSROOM UTILITIES</h1>
         </div>
 
+        <!-- WHITEBOARD TOOLBAR CONTROLS WIDGET -->
+        <div id="widget-whiteboard" class="absolute w-[460px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; right: 520px;">
+            <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
+                <span class="text-xs font-bold text-pink-400 tracking-wider">🎨 WHITEBOARD TOOLS</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleWidget('whiteboard')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
+                </div>
+            </div>
+            <div class="p-4 flex flex-col space-y-3 text-white">
+                <!-- Modes & Background Controls -->
+                <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
+                    <button id="wb-mode-transparent" onclick="setWhiteboardBg('transparent')" class="py-1.5 rounded-xl border border-pink-500 bg-pink-500/20 text-pink-300 transition">Transparent</button>
+                    <button id="wb-mode-slate" onclick="setWhiteboardBg('slate')" class="py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition">Dark Slate</button>
+                    <button id="wb-mode-white" onclick="setWhiteboardBg('white')" class="py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition">Whiteboard</button>
+                </div>
+                
+                <!-- Color Toggles & History Actions -->
+                <div class="flex items-center justify-between bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider mr-1">Color:</span>
+                        <button onclick="setWbColor('#ef4444')" class="w-5 h-5 rounded-full bg-rose-500 border border-white/20 transform hover:scale-110 transition"></button>
+                        <button onclick="setWbColor('#3b82f6')" class="w-5 h-5 rounded-full bg-blue-500 border border-white/20 transform hover:scale-110 transition"></button>
+                        <button onclick="setWbColor('#22c55e')" class="w-5 h-5 rounded-full bg-emerald-500 border border-white/20 transform hover:scale-110 transition"></button>
+                        <button onclick="setWbColor('#eab308')" class="w-5 h-5 rounded-full bg-yellow-500 border border-white/20 transform hover:scale-110 transition"></button>
+                        <button onclick="setWbColor('#ffffff')" class="w-5 h-5 rounded-full bg-white border border-slate-400 transform hover:scale-110 transition"></button>
+                        <button onclick="setWbColor('#0f172a')" class="w-5 h-5 rounded-full bg-slate-900 border border-white/20 transform hover:scale-110 transition"></button>
+                        <button id="wb-tool-eraser" onclick="activateWbEraser()" class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider">🧽 Eraser</button>
+                    </div>
+                    <!-- Undo / Redo Buttons -->
+                    <div class="flex items-center space-x-1 border-l border-white/10 pl-2">
+                        <button onclick="wbUndo()" title="Undo (Ctrl+Z)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↩️</button>
+                        <button onclick="wbRedo()" title="Redo (Ctrl+Y)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↪️</button>
+                    </div>
+                </div>
+
+                <!-- Size Selector and Operations -->
+                <div class="flex items-center justify-between bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Size:</span>
+                        <input type="range" id="wb-brush-slider" min="2" max="30" value="5" class="w-24 h-1 bg-slate-800 appearance-none cursor-pointer accent-pink-500 rounded-lg">
+                        <span id="wb-brush-label" class="text-[10px] font-extrabold text-pink-400">5px</span>
+                    </div>
+                    <button onclick="clearWbCanvas()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-4 py-1.5 rounded-xl text-xs tracking-wider uppercase shadow-md">Clear Canvas</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 1. CLOCK -->
-        <div id="widget-clock" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 50px;">
+        <div id="widget-clock" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-indigo-300 tracking-wider">🕒 CLOCK</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('clock', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('clock', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('clock')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -124,10 +176,10 @@
         </div>
 
         <!-- 2. TIMER -->
-        <div id="widget-timer" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 350px;">
+        <div id="widget-timer" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 350px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-emerald-300 tracking-wider">⏱️ TIMER</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('timer', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('timer', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('timer')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -147,11 +199,11 @@
             </div>
         </div>
 
-        <!-- 3. VOICE LEVEL CHART (UPGRADED SOUND LEVEL METER) -->
-        <div id="widget-sound" class="absolute w-80 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 50px;">
+        <!-- 3. VOICE LEVEL CHART -->
+        <div id="widget-sound" class="absolute w-80 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-rose-300 tracking-wider">🎙️ VOICE LEVEL METER</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('sound', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('sound', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('sound')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -162,11 +214,8 @@
                     <button onclick="startAudioMeter()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-5 py-2.5 rounded-2xl text-xs tracking-wider shadow-lg">Activate Mic Sensor</button>
                 </div>
                 <div id="mic-active-container" class="w-full hidden flex flex-col items-center">
-                    <!-- LED Voice Chart Container -->
                     <div class="w-full bg-slate-950/80 p-3.5 rounded-2xl border border-white/10 mb-4 flex flex-col items-center">
                         <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Sound Level Monitor</div>
-                        
-                        <!-- 10 Responsive LED Segments -->
                         <div class="flex space-x-1.5 w-full h-7 justify-between items-center px-1" id="led-container">
                             <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
                             <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
@@ -179,13 +228,8 @@
                             <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
                             <div class="led-seg flex-1 h-full rounded bg-slate-800 transition duration-100"></div>
                         </div>
-
-                        <!-- Real-time Voice Mode Label Badge -->
-                        <div id="voice-level-label" class="mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300">
-                            🤫 SILENCE
-                        </div>
+                        <div id="voice-level-label" class="mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300">🤫 SILENCE</div>
                     </div>
-
                     <div class="w-full px-1 mb-3">
                         <div class="flex justify-between text-[10px] text-slate-300 font-bold mb-1.5 tracking-wider">
                             <span>ALERT THRESHOLD:</span> <span id="limit-label" class="text-rose-400 font-extrabold">70%</span>
@@ -198,10 +242,10 @@
         </div>
 
         <!-- 4. RANDOMIZER -->
-        <div id="widget-picker" class="absolute w-64 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 350px;">
+        <div id="widget-picker" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 350px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-purple-300 tracking-wider">🎰 RANDOMIZER</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('picker', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('picker', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('picker')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -217,11 +261,11 @@
             </div>
         </div>
 
-        <!-- 5. WORK SYMBOLS (EXPECTATIONS) -->
-        <div id="widget-symbols" class="absolute w-[440px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; right: 50px;">
+        <!-- 5. WORK SYMBOLS -->
+        <div id="widget-symbols" class="absolute w-[440px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; right: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-amber-300 tracking-wider">📣 EXPECTATIONS</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('symbols', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('symbols', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('symbols')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -248,23 +292,21 @@
         </div>
 
         <!-- 6. STICKY NOTES WIDGET -->
-        <div id="widget-notes" class="absolute w-72 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 100px; left: 630px;">
+        <div id="widget-notes" class="absolute w-72 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 630px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-yellow-300 tracking-wider">📌 STICKY NOTE</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('notes', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('notes', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('notes')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
                 </div>
             </div>
             <div class="p-4 flex flex-col" id="sticky-note-container">
-                <!-- Sticky notepad container -->
                 <div id="sticky-pad" class="w-full rounded-2xl p-3 bg-yellow-400/20 border border-yellow-500/30 transition-colors duration-300">
                     <textarea id="sticky-content" placeholder="Type a reminder or write keywords to expand..." 
                               class="w-full bg-transparent text-white text-xs font-medium h-32 resize-none outline-none placeholder-white/30 custom-scrollbar"
                               oninput="saveStickyNote()"></textarea>
                 </div>
-                <!-- Color customization triggers -->
                 <div class="flex items-center justify-between mt-3 px-1">
                     <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Background:</span>
                     <div class="flex space-x-1.5">
@@ -274,7 +316,6 @@
                         <button onclick="setStickyColor('blue')" class="w-4 h-4 rounded-full bg-sky-400 border border-white/20 hover:scale-110 transition"></button>
                     </div>
                 </div>
-                <!-- Font size customization triggers -->
                 <div class="flex items-center justify-between mt-2.5 px-1 border-t border-white/5 pt-2">
                     <span class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Font Size:</span>
                     <div class="flex space-x-2 items-center">
@@ -283,7 +324,6 @@
                         <button onclick="changeStickyFontSize(2)" class="bg-slate-800/80 hover:bg-slate-700/80 text-white rounded-lg px-2 py-0.5 text-[9px] font-bold transition border border-white/5">+ A</button>
                     </div>
                 </div>
-                <!-- Gemini LLM-Powered Expansion -->
                 <div class="mt-2.5 pt-2 border-t border-white/5 flex justify-end">
                     <button onclick="aiExplainSticky()" id="btn-ai-explain" class="w-full bg-indigo-600 hover:bg-indigo-500 transition text-white font-extrabold py-1.5 px-3 rounded-xl text-[10px] tracking-wider flex items-center justify-center space-x-1 shadow-md">
                         <span>✨ Explain / Expand Note</span>
@@ -293,39 +333,34 @@
         </div>
 
         <!-- 7. AGENDA WIDGET -->
-        <div id="widget-agenda" class="absolute w-[320px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 630px;">
+        <div id="widget-agenda" class="absolute w-[320px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 630px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-teal-300 tracking-wider">📋 DAILY AGENDA</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('agenda', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('agenda', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('agenda')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
                 </div>
             </div>
             <div class="p-4 flex flex-col space-y-3">
-                <!-- Agenda Input Field -->
                 <div class="flex space-x-2">
                     <input type="text" id="agenda-input" placeholder="Add custom lesson item..." 
                            class="flex-1 bg-slate-950/80 border border-white/10 text-white rounded-xl px-3 py-1.5 text-xs outline-none focus:border-teal-500 transition placeholder-slate-500"
                            onkeypress="handleAgendaKey(event)">
                     <button onclick="addAgendaItem()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">Add</button>
                 </div>
-                <!-- Agenda Checklist Container -->
-                <div id="agenda-list-container" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                    <!-- Dynamic Items render here -->
-                </div>
-                <!-- Gemini-powered daily icebreakers & lesson ideas creator -->
+                <div id="agenda-list-container" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1"></div>
                 <button onclick="aiDraftAgendaIdeas()" id="btn-agenda-ai" class="w-full bg-indigo-600/20 hover:bg-indigo-600/40 border border-teal-500/30 text-teal-300 transition font-bold py-1.5 rounded-xl text-[10px] tracking-wider uppercase">
                     ✨ Generate Icebreakers & Ideas
                 </button>
             </div>
         </div>
 
-        <!-- 8. RANDOM GROUP GENERATOR WIDGET -->
-        <div id="widget-groups" class="absolute w-[360px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 280px; left: 970px;">
+        <!-- 8. RANDOM GROUP GENERATOR -->
+        <div id="widget-groups" class="absolute w-[360px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 970px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-pink-300 tracking-wider">👥 GROUP GENERATOR</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('groups', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('groups', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('groups')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -333,14 +368,12 @@
             </div>
             <div class="p-4 flex flex-col space-y-3">
                 <div>
-                    <!-- Visual counter to provide instant Google Sheets paste confirmation feedback -->
                     <div class="flex justify-between items-center mb-1.5">
                         <label class="block text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">Students (Paste list from Sheets):</label>
                         <span id="student-count-badge" class="bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-full">10 Loaded</span>
                     </div>
                     <textarea id="group-names-input" oninput="updateStudentCount()" class="w-full bg-slate-900/80 text-white text-[11px] rounded-xl p-2.5 h-24 resize-none outline-none border border-white/5 custom-scrollbar">Alex, Sam, Taylor, Jordan, Morgan, Bailey, Casey, Robin, Jesse, Jamie</textarea>
                 </div>
-                
                 <div class="flex items-center justify-between bg-slate-950/40 p-2 rounded-xl border border-white/5">
                     <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Number of Groups:</span>
                     <div class="flex items-center space-x-2">
@@ -349,25 +382,23 @@
                         <button onclick="adjustGroupCount(1)" class="w-7 h-7 bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold rounded-lg transition">+</button>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-2">
                     <button onclick="generateGroups()" class="bg-pink-600 hover:bg-pink-500 transition text-white font-bold py-2 rounded-xl text-xs tracking-wider shadow-lg">CREATE GROUPS</button>
                     <button onclick="aiGenerateTeamMissions()" id="btn-ai-missions" class="bg-purple-600 hover:bg-purple-500 transition text-white font-bold py-2 rounded-xl text-xs tracking-wider shadow-lg flex items-center justify-center space-x-1">
                         <span>✨ AI Missions</span>
                     </button>
                 </div>
-                
                 <div id="groups-result-container" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 pr-1 pt-1">
                     <div class="text-[11px] text-slate-500 text-center py-4 font-semibold italic">Ready to organize your teams!</div>
                 </div>
             </div>
         </div>
 
-        <!-- 10. QR CODE GENERATOR WIDGET -->
-        <div id="widget-qr" class="absolute w-[310px] rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; left: 1310px;">
+        <!-- 10. QR CODE GENERATOR -->
+        <div id="widget-qr" class="absolute w-[310px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 220px; left: 1310px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-orange-300 tracking-wider">📱 QR CODE GENERATOR</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('qr', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('qr', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('qr')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
@@ -381,22 +412,14 @@
                            value="https://sites.google.com/fsksurat.in/sciences-game-zone/home"
                            onkeypress="handleQRKey(event)">
                 </div>
-
-                <!-- Custom Logo Customizer Controls -->
                 <div class="w-full bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
                     <label class="block text-[9px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">Center Brand Logo:</label>
-                    
                     <div class="grid grid-cols-3 gap-1.5 mb-2">
-                        <!-- High Priority official Fountainhead School emblem option -->
-                        <button onclick="selectQRLogo('school-logo')" id="qr-logo-btn-official" class="qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold col-span-3 hover:bg-slate-800 transition">
-                            🏫 Fountainhead Logo
-                        </button>
+                        <button onclick="selectQRLogo('school-logo')" id="qr-logo-btn-official" class="qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold col-span-3 hover:bg-slate-800 transition">🏫 Fountainhead Logo</button>
                         <button onclick="selectQRLogo('')" id="qr-logo-btn-none" class="qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition">None</button>
                         <button onclick="selectQRLogo('🧪')" id="qr-logo-btn-sci" class="qr-logo-preset border border-white/5 bg-slate-950 text-[12px] py-1 rounded-lg hover:bg-slate-900 transition">🧪</button>
                         <button onclick="selectQRLogo('🧬')" id="qr-logo-btn-bio" class="qr-logo-preset border border-white/5 bg-slate-950 text-[12px] py-1 rounded-lg hover:bg-slate-900 transition">🧬</button>
                     </div>
-
-                    <!-- Custom link or emoji integration option -->
                     <div class="flex flex-col space-y-1.5 border-t border-white/5 pt-2">
                         <label class="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">Custom Central Image URL / Emoji:</label>
                         <input type="text" id="qr-custom-logo-input" placeholder="Paste custom logo link or type Emoji..."
@@ -404,10 +427,7 @@
                                oninput="applyCustomEmojiLogo()">
                     </div>
                 </div>
-
                 <button onclick="createQR()" class="w-full bg-orange-600 hover:bg-orange-500 transition text-white font-bold py-1.5 rounded-xl text-xs tracking-wider shadow-lg">GENERATE QR</button>
-                
-                <!-- QR Code Dynamic Render Box -->
                 <div class="flex justify-center w-full">
                     <div id="qr-display-wrapper" class="w-44 h-44 bg-white p-3 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner hidden">
                         <div id="qrcode" class="w-full h-full"></div>
@@ -417,17 +437,16 @@
         </div>
 
         <!-- 9. SETTINGS & BACKGROUNDS WIDGET -->
-        <div id="widget-settings" class="absolute w-80 rounded-3xl glass-widget overflow-hidden z-20 hidden" style="top: 220px; right: 50px;">
+        <div id="widget-settings" class="absolute w-80 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 220px; right: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-sky-300 tracking-wider">⚙️ DASHBOARD SETTINGS</span>
-                <div class="flex items-center space-x-2 z-30">
+                <div class="flex items-center space-x-2">
                     <button onclick="changeWidgetScale('settings', -0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">-</button>
                     <button onclick="changeWidgetScale('settings', 0.1)" class="w-5 h-5 flex items-center justify-center text-[10px] bg-white/5 hover:bg-white/15 text-white font-bold rounded transition">+</button>
                     <button onclick="toggleWidget('settings')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
                 </div>
             </div>
             <div class="p-4 flex flex-col space-y-4">
-                <!-- Custom Google Image Input -->
                 <div>
                     <label class="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wider">Custom Background Image URL</label>
                     <div class="flex space-x-2">
@@ -436,8 +455,6 @@
                         <button onclick="applyCustomBackground()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">Apply</button>
                     </div>
                 </div>
-
-                <!-- Presets -->
                 <div>
                     <label class="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wider">Quick Presets</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -462,7 +479,11 @@
         </div>
 
         <!-- CONTROL PANEL DOCKBAR WITH LABELS -->
-        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-4 shadow-3xl z-30 max-w-[95%] overflow-x-auto custom-scrollbar">
+        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-4 shadow-3xl z-30 max-w-[95%] overflow-x-auto custom-scrollbar pointer-events-auto">
+            <button onclick="toggleWhiteboardCanvas()" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
+                <div id="dock-btn-wb" class="w-12 h-12 rounded-2xl bg-pink-600/90 hover:bg-pink-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎨</div>
+                <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Draw</span>
+            </button>
             <button onclick="toggleWidget('clock')" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div class="w-12 h-12 rounded-2xl bg-indigo-600/90 hover:bg-indigo-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🕒</div>
                 <span class="text-[9px] font-extrabold text-slate-300 mt-1.5 uppercase tracking-widest">Clock</span>
@@ -506,9 +527,8 @@
         </nav>
     </div>
 
-    <!-- GIANT SYMBOL FULLSCREEN OVERLAY (Fully transparent with zero dark boxes) -->
+    <!-- GIANT SYMBOL FULLSCREEN OVERLAY -->
     <div id="giant-symbol-overlay" onclick="closeGiantSymbol()" class="fixed inset-0 bg-slate-950/20 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center cursor-pointer hidden transition duration-300 opacity-0">
-        <!-- Floating container is completely transparent (no bg-slate-950, no borders, no background card) -->
         <div class="text-center p-8 bg-transparent transform scale-90 transition duration-300 max-w-2xl" id="giant-symbol-content">
             <span id="giant-symbol-emoji" class="text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_60px_rgba(255,255,255,0.5)] animate-bounce select-none">🤫</span>
             <h2 id="giant-symbol-title" class="text-4xl md:text-7xl font-black text-amber-400 tracking-widest uppercase mt-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] select-none">SILENCE</h2>
@@ -541,14 +561,14 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-[-10px]');
                 setTimeout(() => { toast.remove(); }, 300);
-            }, 5000); // AI operations deserve a tiny bit more viewing time
+            }, 5000);
         }
 
-        // --- DYNAMIC PERSISTENT COOPERATIVE GEMINI ENGINE WITH EXPONENTIAL BACKOFF ---
+        // --- GEMINI COOPERATIVE INTERFACE ---
         async function callGemini(prompt, systemInstruction = "You are an inspiring, creative co-teacher at Fountainhead School. Respond with age-appropriate, concise, exciting, and supportive material.") {
-            const apiKey = ""; // Runtime-supplied key
+            const apiKey = ""; 
             const url = `https://genergenerativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const cleanUrl = url.replace('genergenerative', 'generative'); // Secure correction guardrail
+            const cleanUrl = url.replace('genergenerative', 'generative');
             
             let delay = 1000;
             for (let i = 0; i < 5; i++) {
@@ -569,7 +589,7 @@
                         throw new Error("Empty content block returned.");
                     }
                 } catch (error) {
-                    if (i === 4) throw error; // Reject with clean state message on final failure
+                    if (i === 4) throw error;
                 }
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 2;
@@ -577,14 +597,12 @@
             throw new Error("API call timed out after multiple retries.");
         }
 
-        // Gemini AI Action 1: Sticky Note simplification/expansion
         async function aiExplainSticky() {
             const stickyText = document.getElementById('sticky-content').value.trim();
             if (!stickyText) {
                 showNotification("Write down a science term or phrase in the sticky note first!", "error");
                 return;
             }
-
             const btn = document.getElementById('btn-ai-explain');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
@@ -594,8 +612,6 @@
             try {
                 const prompt = `Explain the following educational topic or keyword in a highly engaging, super easy-to-understand, kid-friendly way (grade 5-8 level) in 2-3 short sentences. Make it sound fascinating! Topic: "${stickyText}"`;
                 const aiResponse = await callGemini(prompt, "You are a friendly, brilliant, and creative science educator who makes complex topics sound incredibly fun for students.");
-                
-                // Append AI explanation cleanly
                 document.getElementById('sticky-content').value = stickyText + "\n\n✨ AI Explains:\n" + aiResponse;
                 saveStickyNote();
                 showNotification("Note expanded successfully!", "success");
@@ -607,23 +623,19 @@
             }
         }
 
-        // Gemini AI Action 2: Active Team Missions
         async function aiGenerateTeamMissions() {
             const resultContainer = document.getElementById('groups-result-container');
             const listItems = resultContainer.querySelectorAll('.bg-slate-900\\/60');
-            
             if (listItems.length === 0) {
                 showNotification("Please generate groups first before giving them team missions!", "error");
                 return;
             }
-
             const btn = document.getElementById('btn-ai-missions');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = `<span>🧠 Thinking...</span>`;
             showNotification("Gemini is assigning team challenges...", "ai");
 
-            // Aggregate student grouping text
             let groupingLayout = "";
             listItems.forEach((item, idx) => {
                 groupingLayout += `Group ${idx + 1}: ${item.querySelector('.text-white\\/90').innerText}\n`;
@@ -632,8 +644,6 @@
             try {
                 const prompt = `We have split the class into the following teams:\n${groupingLayout}\nGive each team a highly engaging, custom, collaborative 1-sentence science/logic puzzle or activity mission to complete together in 3 minutes. Respond with a quick bulleted list matching the group names. Keep it punchy!`;
                 const aiResponse = await callGemini(prompt, "You are an inspiring, creative game master of a high-energy classroom. Draft concise, highly active missions.");
-                
-                // Insert missions layout on the results board
                 const missionPanel = document.createElement('div');
                 missionPanel.className = 'bg-indigo-950/70 border border-indigo-500/30 p-3.5 rounded-2xl mt-3 text-xs text-indigo-200';
                 missionPanel.innerHTML = `
@@ -653,30 +663,23 @@
             }
         }
 
-        // Gemini AI Action 3: Agenda Icebreaker Planner
         async function aiDraftAgendaIdeas() {
             if (agendaItems.length === 0) {
                 showNotification("Please add some items to your daily agenda first!", "error");
                 return;
             }
-
             const btn = document.getElementById('btn-agenda-ai');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = `<span>🧠 Thinking...</span>`;
             showNotification("Gemini is brainstorming lesson hooks...", "ai");
 
-            // Extract text from active agenda checklist
             const agendaText = agendaItems.map(item => item.text).join(', ');
 
             try {
                 const prompt = `Based on our current daily lesson schedule: "${agendaText}". Suggest 2 extremely fast, engaging interactive icebreakers, riddles, or warm-up questions that get Fountainhead School students thinking. Keep the suggestion under 60 words total and highly energetic.`;
                 const aiResponse = await callGemini(prompt, "You are a master teacher who design highly creative, memorable, fast starters to spark interest in any lesson.");
-                
-                // Present suggestions via beautiful, clean toast panels
                 showNotification(`✨ AI Starters:\n${aiResponse}`, "success");
-                
-                // Auto-create a temporary reminder sticky note for the teacher
                 document.getElementById('widget-notes').classList.remove('hidden');
                 document.getElementById('sticky-content').value = `✨ LESSON STARTERS:\n${aiResponse}\n\n` + document.getElementById('sticky-content').value;
                 saveStickyNote();
@@ -688,38 +691,213 @@
             }
         }
 
-        // Dynamic Scaling State Control for Individual Widgets
-        let widgetScales = {
-            clock: 1.0,
-            timer: 1.0,
-            sound: 1.0,
-            picker: 1.0,
-            symbols: 1.0,
-            notes: 1.0,
-            agenda: 1.0,
-            settings: 1.0,
-            groups: 1.0,
-            qr: 1.0
-        };
+        // --- WHITEBOARD ENGINE & UNDO-REDO MEMORY STACK ---
+        const wbLayer = document.getElementById('whiteboard-layer');
+        const canvas = document.getElementById('wb-canvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let wbColor = '#ffffff';
+        let wbBrushSize = 5;
+        let isEraser = false;
 
-        // Initialize scales
+        // History Data Arrays
+        let wbUndoStack = [];
+        let wbRedoStack = [];
+        const MAX_HISTORY_STEPS = 25;
+
+        function initWhiteboardCanvas() {
+            // Save contents before resize to prevent accidental canvas loss
+            let tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            let tempCtx = tempCanvas.getContext('2d');
+            if (canvas.width > 0 && canvas.height > 0) {
+                tempCtx.drawImage(canvas, 0, 0);
+            }
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Restore drawing state
+            if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+                ctx.drawImage(tempCanvas, 0, 0);
+            }
+        }
+        window.addEventListener('resize', initWhiteboardCanvas);
+
+        function saveWbState() {
+            // Cap state collection bounds limits
+            if (wbUndoStack.length >= MAX_HISTORY_STEPS) {
+                wbUndoStack.shift();
+            }
+            wbUndoStack.push(canvas.toDataURL());
+            wbRedoStack = []; // Clear redo stack on fresh drawing strokes actions
+        }
+
+        function wbUndo() {
+            if (wbUndoStack.length === 0) {
+                showNotification("Nothing left to undo!", "error");
+                return;
+            }
+            wbRedoStack.push(canvas.toDataURL());
+            let previousStateUrl = wbUndoStack.pop();
+            restoreWbState(previousStateUrl);
+        }
+
+        function wbRedo() {
+            if (wbRedoStack.length === 0) {
+                showNotification("Nothing left to redo!", "error");
+                return;
+            }
+            wbUndoStack.push(canvas.toDataURL());
+            let nextStateUrl = wbRedoStack.pop();
+            restoreWbState(nextStateUrl);
+        }
+
+        function restoreWbState(dataUrl) {
+            let img = new Image();
+            img.src = dataUrl;
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(img, 0, 0);
+                ctx.restore();
+            };
+        }
+
+        // Global shortcuts framework layout hook mapping
+        window.addEventListener('keydown', (e) => {
+            if (wbLayer.classList.contains('hidden')) return;
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                wbUndo();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                wbRedo();
+            }
+        });
+
+        function toggleWhiteboardCanvas() {
+            const isHidden = wbLayer.classList.contains('hidden');
+            const dockBtn = document.getElementById('dock-btn-wb');
+            if (isHidden) {
+                wbLayer.classList.remove('hidden');
+                document.getElementById('widget-whiteboard').classList.remove('hidden');
+                dockBtn.classList.remove('bg-pink-600/90');
+                dockBtn.classList.add('bg-pink-500', 'ring-4', 'ring-pink-400/40');
+                initWhiteboardCanvas();
+                showNotification("Whiteboard layout active! Press Ctrl+Z to undo.", "success");
+            } else {
+                wbLayer.classList.add('hidden');
+                document.getElementById('widget-whiteboard').classList.add('hidden');
+                dockBtn.classList.add('bg-pink-600/90');
+                dockBtn.classList.remove('bg-pink-500', 'ring-4', 'ring-pink-400/40');
+            }
+        }
+
+        function setWhiteboardBg(mode) {
+            const modes = ['transparent', 'slate', 'white'];
+            modes.forEach(m => {
+                const btn = document.getElementById(`wb-mode-${m}`);
+                btn.className = "py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition";
+            });
+            const activeBtn = document.getElementById(`wb-mode-${mode}`);
+            activeBtn.className = "py-1.5 rounded-xl border border-pink-500 bg-pink-500/20 text-pink-300 transition";
+
+            if (mode === 'transparent') {
+                wbLayer.style.background = 'transparent';
+            } else if (mode === 'slate') {
+                wbLayer.style.background = '#0f172a';
+            } else if (mode === 'white') {
+                wbLayer.style.background = '#ffffff';
+            }
+        }
+
+        function setWbColor(color) {
+            isEraser = false;
+            wbColor = color;
+            document.getElementById('wb-tool-eraser').className = "px-2.5 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider";
+        }
+
+        function activateWbEraser() {
+            isEraser = true;
+            document.getElementById('wb-tool-eraser').className = "px-2.5 py-0.5 text-[9px] font-bold rounded-md border border-pink-500 bg-pink-500/20 text-pink-300 transition uppercase tracking-wider";
+        }
+
+        function clearWbCanvas() {
+            saveWbState(); // Save state before wiping to allow clearing reversal execution
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            showNotification("Canvas cleared clean!", "info");
+        }
+
+        document.getElementById('wb-brush-slider').addEventListener('input', (e) => {
+            wbBrushSize = e.target.value;
+            document.getElementById('wb-brush-label').textContent = wbBrushSize + 'px';
+        });
+
+        // Drawing Triggers
+        canvas.addEventListener('mousedown', (e) => {
+            saveWbState(); // Capture current image data array layer frame configuration layout state blocks
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!drawing) return;
+            ctx.lineWidth = wbBrushSize;
+            
+            if (isEraser) {
+                ctx.globalCompositeOperation = 'destination-out';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = wbColor;
+            }
+            
+            ctx.lineTo(e.clientX, e.clientY);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseleave', () => drawing = false);
+
+        // Touch setups for Smart Boards / Tablets
+        canvas.addEventListener('touchstart', (e) => {
+            saveWbState();
+            const t = e.touches[0];
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(t.clientX, t.clientY);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            if (!drawing) return;
+            const t = e.touches[0];
+            ctx.lineWidth = wbBrushSize;
+            ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+            if (!isEraser) ctx.strokeStyle = wbColor;
+            ctx.lineTo(t.clientX, t.clientY);
+            ctx.stroke();
+        });
+        canvas.addEventListener('touchend', () => drawing = false);
+
+        // --- CORE RESCALING LAYOUT CONTROLS ---
+        let widgetScales = { clock: 1.0, timer: 1.0, sound: 1.0, picker: 1.0, symbols: 1.0, notes: 1.0, agenda: 1.0, settings: 1.0, groups: 1.0, qr: 1.0, whiteboard: 1.0 };
+
         function loadWidgetScales() {
             const saved = localStorage.getItem('widget_scales');
             if (saved) {
-                try {
-                    widgetScales = { ...widgetScales, ...JSON.parse(saved) };
-                } catch(e) {}
+                try { widgetScales = { ...widgetScales, ...JSON.parse(saved) }; } catch(e) {}
             }
-            Object.keys(widgetScales).forEach(id => {
-                applyWidgetScale(id);
-            });
+            Object.keys(widgetScales).forEach(id => applyWidgetScale(id));
         }
 
         function applyWidgetScale(id) {
             const el = document.getElementById('widget-' + id);
-            if (el) {
-                el.style.setProperty('--widget-scale', widgetScales[id]);
-            }
+            if (el) el.style.setProperty('--widget-scale', widgetScales[id]);
         }
 
         function changeWidgetScale(id, delta) {
@@ -728,7 +906,7 @@
             localStorage.setItem('widget_scales', JSON.stringify(widgetScales));
         }
 
-        // Audio Engine Setup
+        // --- AUDIO ENGINE LOGIC ---
         let audioCtx = null, isMuted = false, alarmId = null, ringing = false;
         function getCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
         
@@ -750,33 +928,25 @@
         function triggerAlarm() {
             if (ringing) return; ringing = true; playBell();
             alarmId = setInterval(playBell, 600);
-            
-            // ALARM BELL DURATION TO EXACTLY 3 SECONDS
             setTimeout(() => { clearInterval(alarmId); alarmId = null; ringing = false; }, 3000);
         }
 
-        // Elegant chime arpeggio melody to capture student attention gently
         function playAttentionChime() {
             if (isMuted) return;
             try {
-                const ctx = getCtx();
-                const now = ctx.currentTime;
-                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 notes
+                const ctx = getCtx(), now = ctx.currentTime;
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
                 freqs.forEach((f, i) => {
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
+                    const o = ctx.createOscillator(), g = ctx.createGain();
                     o.frequency.setValueAtTime(f, now + i * 0.1);
                     g.gain.setValueAtTime(0.08, now + i * 0.1);
                     g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.8);
-                    o.connect(g);
-                    g.connect(ctx.destination);
-                    o.start(now + i * 0.1);
-                    o.stop(now + i * 0.1 + 0.8);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.8);
                 });
             } catch(e){}
         }
 
-        // Toggle Bell audio state
         function toggleBellMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-bell-mute');
@@ -786,12 +956,9 @@
             showNotification(isMuted ? "Bell Sound Muted" : "Bell Sound Activated", "info");
         }
 
-        // Draggable Widget Code
         function toggleWidget(id) { 
             const t = document.getElementById('widget-' + id); 
-            if (t) {
-                t.classList.toggle('hidden'); 
-            }
+            if (t) t.classList.toggle('hidden'); 
         }
         
         let maxZ = 20;
@@ -815,7 +982,7 @@
             document.getElementById('clock-calendar-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         }, 1000);
 
-        // Timer Code
+        // Timer Layout Engine
         let dur = 60, rem = 60, tId = null;
         function updateT() { document.getElementById('timer-display').textContent = `${String(Math.floor(rem / 60)).padStart(2,'0')}:${String(rem % 60).padStart(2,'0')}`; }
         function setTimer(s) { clearInterval(tId); tId = null; dur = s; rem = s; updateT(); showNotification(`Timer set to ${s/60} Minute(s)`, "info"); }
@@ -823,12 +990,20 @@
             if (tId) { clearInterval(tId); tId = null; document.getElementById('btn-timer-start').textContent = "START"; }
             else {
                 document.getElementById('btn-timer-start').textContent = "PAUSE";
-                tId = setInterval(() => { if (rem <= 1) { clearInterval(tId); tId = null; alert("Timer up!"); rem = dur; } else { rem--; } updateT(); }, 1000);
+                tId = setInterval(() => { 
+                    if (rem <= 1) { 
+                        clearInterval(tId); tId = null; 
+                        showNotification("🚨 Countdown Finish! Timer is complete.", "timer");
+                        triggerAlarm();
+                        rem = dur; 
+                    } else { rem--; } 
+                    updateT(); 
+                }, 1000);
             }
         }
         function resetTimer() { clearInterval(tId); tId = null; rem = dur; updateT(); document.getElementById('btn-timer-start').textContent = "START"; }
 
-        // Upgraded Audio Analyzer (LED Level Chart)
+        // Audio Frequency Level Gauge Monitor
         async function startAudioMeter() {
             getCtx();
             try {
@@ -847,34 +1022,19 @@
 
                 function frame() {
                     az.getByteFrequencyData(data);
-                    
-                    // Convert frequency amplitudes smoothly to a 0-100 percentage
                     let pct = Math.min(Math.round((data.reduce((a, b) => a + b, 0) / data.length / 110) * 100), 100);
                     let lim = parseInt(s.value);
-                    
-                    // Determine how many segments to light up (out of 10)
                     let activeSegments = Math.round((pct / 100) * 10);
                     
-                    // Update individual LED bars
                     leds.forEach((led, i) => {
-                        // Reset all active classes
                         led.className = "led-seg flex-1 h-full rounded bg-slate-800 transition duration-100";
-                        
                         if (i < activeSegments) {
-                            if (i < 4) {
-                                // Green bars
-                                led.classList.add('led-active-green');
-                            } else if (i < 7) {
-                                // Yellow bars
-                                led.classList.add('led-active-yellow');
-                            } else {
-                                // Red bars
-                                led.classList.add('led-active-red');
-                            }
+                            if (i < 4) led.classList.add('led-active-green');
+                            else if (i < 7) led.classList.add('led-active-yellow');
+                            else led.classList.add('led-active-red');
                         }
                     });
 
-                    // Update the human-readable classroom voice mode guide
                     if (pct < 12) {
                         label.textContent = "🤫 SILENCE";
                         label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase transition-all duration-300";
@@ -889,11 +1049,7 @@
                         label.className = "mt-3.5 text-[10px] font-extrabold tracking-widest text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-full uppercase transition-all duration-300 animate-pulse";
                     }
 
-                    // Sound Alert trigger
-                    if (pct >= lim) {
-                        triggerAlarm(); 
-                    }
-                    
+                    if (pct >= lim) triggerAlarm(); 
                     requestAnimationFrame(frame);
                 }
                 frame();
@@ -901,43 +1057,32 @@
         }
         document.getElementById('sound-limit-slider').addEventListener('input', e => document.getElementById('limit-label').textContent = e.target.value + '%');
 
-        // Helpers to parse lists cleanly from Google Sheets copy-paste actions
         function cleanSplitList(textVal) {
-            // Regex handles carriage returns, newlines, tabs, commas, and semicolons cleanly
-            return textVal
-                .split(/[\r\n\t,;]+/)
-                // Strip spreadsheet-wrapping quotes like "Jamie" or 'Sam'
-                .map(n => n.replace(/^["']|["']$/g, '').trim())
-                .filter(n => n.length > 0);
+            return textVal.split(/[\r\n\t,;]+/).map(n => n.replace(/^["']|["']$/g, '').trim()).filter(n => n.length > 0);
         }
 
-        // Live list counters to provide instant spreadsheet visual feedback
         function updateStudentCount() {
             const count = cleanSplitList(document.getElementById('group-names-input').value).length;
             document.getElementById('student-count-badge').textContent = `${count} Loaded`;
         }
 
-        // Dynamic update for spin randomizer name count
         function updateRandomizerCount() {
             const count = cleanSplitList(document.getElementById('picker-names').value).length;
             document.getElementById('randomizer-count-badge').textContent = `${count} Names loaded`;
         }
 
-        // Name Spinner (Robust Parsing Engine upgraded for sheets copying)
         function spinNames() {
             const names = cleanSplitList(document.getElementById('picker-names').value);
-            if(!names.length) {
-                showNotification("Please enter or paste names first!", "error");
-                return;
-            }
+            if(!names.length) { showNotification("Please enter or paste names first!", "error"); return; }
             let c = 0, box = document.getElementById('picker-display');
             function roll() { box.textContent = names[Math.floor(Math.random()*names.length)]; if(c++ < 10) setTimeout(roll, 80); }
+            box.classList.add('animate-pulse');
+            setTimeout(() => box.classList.remove('animate-pulse'), 800);
             roll();
         }
 
-        // Random Group Generator Engine (Robust Sheets Parser Implementation)
+        // Round Robin Group Creation Layout Module
         let targetGroupCount = 3;
-
         function adjustGroupCount(delta) {
             targetGroupCount = Math.max(2, Math.min(12, targetGroupCount + delta));
             document.getElementById('group-count-label').textContent = targetGroupCount;
@@ -947,34 +1092,20 @@
         function generateGroups() {
             const inputVal = document.getElementById('group-names-input').value;
             localStorage.setItem('group_names_input', inputVal);
-            
-            // ROBUST PARSER: Handles Tab columns, linebreaks, and Excel cell formatting effortlessly
             let names = cleanSplitList(inputVal);
-            if (names.length === 0) {
-                showNotification("Please paste student names or enter them first!", "error");
-                return;
-            }
+            if (names.length === 0) { showNotification("Please paste student names or enter them first!", "error"); return; }
 
-            // Shuffle array (Fisher-Yates algorithm)
             for (let i = names.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [names[i], names[j]] = [names[j], names[i]];
             }
-
-            // Initialize balanced groups
             const groups = Array.from({ length: targetGroupCount }, () => []);
+            names.forEach((name, idx) => groups[idx % targetGroupCount].push(name));
 
-            // Distribute round-robin to ensure balanced groups
-            names.forEach((name, idx) => {
-                groups[idx % targetGroupCount].push(name);
-            });
-
-            // Render groups
             const container = document.getElementById('groups-result-container');
             container.innerHTML = '';
-
             groups.forEach((group, idx) => {
-                if (group.length === 0) return; // Skip empty groups
+                if (group.length === 0) return;
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'bg-slate-900/60 border border-white/5 p-3 rounded-2xl';
                 groupDiv.innerHTML = `
@@ -985,43 +1116,21 @@
                 `;
                 container.appendChild(groupDiv);
             });
-
             showNotification("Balanced teams created successfully!", "success");
         }
 
-        // QR Code Generator Engine with Center Brand Logo Support
+        // QR Watermark Generation Core Script
         let qrGeneratorInstance = null;
-        let selectedQRLogo = 'school-logo'; // DEFAULT to official Fountainhead School emblem
+        let selectedQRLogo = 'school-logo';
 
         function selectQRLogo(logoChar) {
             selectedQRLogo = logoChar;
-            
-            // Clear custom logo text input if selecting preset
-            if (logoChar !== 'custom') {
-                document.getElementById('qr-custom-logo-input').value = "";
-            }
-
-            // Highlight chosen preset buttons visually
+            if (logoChar !== 'custom') document.getElementById('qr-custom-logo-input').value = "";
             document.querySelectorAll('.qr-logo-preset').forEach(btn => {
                 btn.className = "qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition";
             });
-
-            const btnMap = {
-                '': 'qr-logo-btn-none',
-                'school-logo': 'qr-logo-btn-official',
-                '🧪': 'qr-logo-btn-sci',
-                '🧬': 'qr-logo-btn-bio'
-            };
-
-            const activeId = btnMap[logoChar];
-            if (activeId) {
-                const activeBtn = document.getElementById(activeId);
-                if (activeBtn) {
-                    activeBtn.className = "qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold";
-                }
-            }
-
-            // Live refresh QR code design
+            const btnMap = { '': 'qr-logo-btn-none', 'school-logo': 'qr-logo-btn-official', '🧪': 'qr-logo-btn-sci', '🧬': 'qr-logo-btn-bio' };
+            if (btnMap[logoChar]) document.getElementById(btnMap[logoChar]).className = "qr-logo-preset border border-orange-500 bg-slate-900 text-[10px] py-1.5 rounded-lg text-white font-bold";
             createQR();
         }
 
@@ -1029,146 +1138,79 @@
             const customVal = document.getElementById('qr-custom-logo-input').value.trim();
             if (customVal) {
                 selectedQRLogo = customVal;
-                // Unhighlight all preset icons
                 document.querySelectorAll('.qr-logo-preset').forEach(btn => {
                     btn.className = "qr-logo-preset border border-white/5 bg-slate-950 text-[10px] py-1.5 rounded-lg text-slate-300 hover:bg-slate-900 transition";
                 });
                 createQR();
-            } else {
-                selectQRLogo('school-logo'); // default to school logo if cleared
-            }
+            } else { selectQRLogo('school-logo'); }
         }
 
         function createQR() {
             const val = document.getElementById('qr-text-input').value.trim();
-            if (!val) {
-                showNotification("Please enter some text or URL first!", "error");
-                return;
-            }
-            
+            if (!val) { showNotification("Please enter some text or URL first!", "error"); return; }
             const wrapper = document.getElementById('qr-display-wrapper');
             const qrcodeDiv = document.getElementById('qrcode');
             
-            // Clear old QR code
             qrcodeDiv.innerHTML = "";
             wrapper.classList.remove('hidden');
             
             try {
-                // Generate base QR utilizing High Error Correction (H Level)
-                // This ensures up to 30% center occlusion/logo styling works flawlessly.
-                // We make colorLight "transparent" to let our custom background logo shine through.
                 qrGeneratorInstance = new QRCode(qrcodeDiv, {
-                    text: val,
-                    width: 152,
-                    height: 152,
-                    colorDark : "#0c111d",
-                    colorLight : "transparent", // Keep QR light background transparent for background image logo
-                    correctLevel : QRCode.CorrectLevel.H
+                    text: val, width: 152, height: 152, colorDark : "#0c111d", colorLight : "transparent", correctLevel : QRCode.CorrectLevel.H
                 });
-                
                 localStorage.setItem('last_qr_text', val);
 
-                // Add slight wait frame for QRCode client library to render vector canvas correctly
                 setTimeout(() => {
                     const canvas = qrcodeDiv.querySelector('canvas');
                     if (canvas && selectedQRLogo !== '') {
-                        const ctx = canvas.getContext('2d');
-                        const size = canvas.width;
-                        
-                        // Render school logo in the background (faded overlay behind QR dark modules)
+                        const ctx = canvas.getContext('2d'), size = canvas.width;
                         if (selectedQRLogo === 'school-logo') {
                             const logoImg = new Image();
-                            logoImg.src = "image_637f0b.png"; // Official uploaded school logo
-                            
+                            logoImg.src = "image_637f0b.png";
                             logoImg.onload = function() {
-                                ctx.save();
-                                // Paint background elements behind the black QR segments
-                                ctx.globalCompositeOperation = 'destination-over';
-                                
-                                // Center coordinate values
-                                const pad = 12;
-                                const imgSize = size - (pad * 2);
-                                
-                                // Render official logo over a clean white background card
-                                ctx.fillStyle = '#ffffff';
-                                ctx.fillRect(0, 0, size, size);
-                                
-                                // Draw school logo in the background with subtle opacity
-                                ctx.globalAlpha = 0.28; // Calibrated transparent background level for crisp scan performance
-                                ctx.drawImage(logoImg, pad, pad, imgSize, imgSize);
+                                ctx.save(); ctx.globalCompositeOperation = 'destination-over';
+                                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                                ctx.globalAlpha = 0.28; ctx.drawImage(logoImg, 12, 12, size - 24, size - 24);
                                 ctx.restore();
                             };
-                            
                             logoImg.onerror = function() {
-                                // Solid dynamic background color as immediate fallback
-                                ctx.save();
-                                ctx.globalCompositeOperation = 'destination-over';
-                                ctx.fillStyle = '#ffffff';
-                                ctx.fillRect(0, 0, size, size);
-                                ctx.fillStyle = '#0284c7';
-                                ctx.globalAlpha = 0.15;
-                                ctx.beginPath();
-                                ctx.arc(size / 2, size / 2, size / 3, 0, 2 * Math.PI);
-                                ctx.fill();
+                                ctx.save(); ctx.globalCompositeOperation = 'destination-over';
+                                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                                ctx.fillStyle = '#0284c7'; ctx.globalAlpha = 0.15;
+                                ctx.beginPath(); ctx.arc(size / 2, size / 2, size / 3, 0, 2 * Math.PI); ctx.fill();
                                 ctx.restore();
                             };
                         } else if (selectedQRLogo.startsWith('http')) {
-                            // Support for any custom image URL pasted by the teacher
                             const customImg = new Image();
-                            customImg.crossOrigin = "anonymous";
-                            customImg.src = selectedQRLogo;
-                            
+                            customImg.crossOrigin = "anonymous"; customImg.src = selectedQRLogo;
                             customImg.onload = function() {
-                                ctx.save();
-                                ctx.globalCompositeOperation = 'destination-over';
-                                ctx.fillStyle = '#ffffff';
-                                ctx.fillRect(0, 0, size, size);
-                                ctx.globalAlpha = 0.25;
-                                ctx.drawImage(customImg, 10, 10, size - 20, size - 20);
+                                ctx.save(); ctx.globalCompositeOperation = 'destination-over';
+                                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                                ctx.globalAlpha = 0.25; ctx.drawImage(customImg, 10, 10, size - 20, size - 20);
                                 ctx.restore();
                             };
                         } else {
-                            // Emoji text-rendering preset fallback
-                            ctx.save();
-                            ctx.globalCompositeOperation = 'destination-over';
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, size, size);
-                            
-                            ctx.fillStyle = '#f97316';
-                            ctx.globalAlpha = 0.15;
-                            ctx.font = `bold ${size * 0.5}px system-ui, -apple-system, sans-serif`;
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(selectedQRLogo, size / 2, size / 2);
-                            ctx.restore();
+                            ctx.save(); ctx.globalCompositeOperation = 'destination-over';
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                            ctx.fillStyle = '#f97316'; ctx.globalAlpha = 0.15;
+                            ctx.font = `bold ${size * 0.5}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillText(selectedQRLogo, size / 2, size / 2); ctx.restore();
                         }
                     } else {
-                        // Plain solid white background if logo is disabled
                         const canvas = qrcodeDiv.querySelector('canvas');
                         if (canvas) {
                             const ctx = canvas.getContext('2d');
-                            const size = canvas.width;
-                            ctx.save();
-                            ctx.globalCompositeOperation = 'destination-over';
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, size, size);
-                            ctx.restore();
+                            ctx.save(); ctx.globalCompositeOperation = 'destination-over';
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
                         }
                     }
                 }, 100);
-
-                showNotification("QR Code generated with background brand watermark! 📱", "success");
-            } catch (e) {
-                showNotification("Failed to generate custom QR Code.", "error");
-                console.error(e);
-            }
+                showNotification("QR Code updated successfully!", "success");
+            } catch (e) { showNotification("Failed to generate custom QR Code.", "error"); }
         }
 
-        function handleQRKey(e) {
-            if (e.key === 'Enter') createQR();
-        }
+        function handleQRKey(e) { if (e.key === 'Enter') createQR(); }
 
-        // Set symbols state and trigger giant overlay display
         function setSymbol(btn, emoji, name) {
             document.querySelectorAll('.symbol-btn').forEach(b => b.classList.remove('border-amber-400/80', 'bg-slate-700/50', 'scale-105'));
             btn.classList.add('border-amber-400/80', 'bg-slate-700/50', 'scale-105');
@@ -1181,47 +1223,35 @@
             const emEl = document.getElementById('giant-symbol-emoji');
             const tiEl = document.getElementById('giant-symbol-title');
 
-            emEl.textContent = emoji;
-            tiEl.textContent = name;
+            emEl.textContent = emoji; tiEl.textContent = name;
 
-            // Adapt text colors and dynamic text glow dropshadows based on selection
             if (name === "SILENCE") {
                 tiEl.className = "text-5xl md:text-8xl font-black text-rose-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
                 emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(244,63,94,0.7)] animate-bounce select-none";
-            }
-            else if (name === "WHISPER") {
+            } else if (name === "WHISPER") {
                 tiEl.className = "text-5xl md:text-8xl font-black text-amber-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
                 emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(245,158,11,0.7)] animate-bounce select-none";
-            }
-            else if (name === "PARTNER") {
+            } else if (name === "PARTNER") {
                 tiEl.className = "text-5xl md:text-8xl font-black text-emerald-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
                 emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(16,185,129,0.7)] animate-bounce select-none";
-            }
-            else {
+            } else {
                 tiEl.className = "text-5xl md:text-8xl font-black text-sky-400 tracking-widest uppercase mt-6 drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] select-none";
                 emEl.className = "text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_70px_rgba(14,165,233,0.7)] animate-bounce select-none";
             }
 
             overlay.classList.remove('hidden');
-            setTimeout(() => {
-                overlay.classList.remove('opacity-0');
-                content.classList.remove('scale-90');
-            }, 10);
-
+            setTimeout(() => { overlay.classList.remove('opacity-0'); content.classList.remove('scale-90'); }, 10);
             playAttentionChime();
         }
 
         function closeGiantSymbol() {
             const overlay = document.getElementById('giant-symbol-overlay');
             const content = document.getElementById('giant-symbol-content');
-            overlay.classList.add('opacity-0');
-            content.classList.add('scale-90');
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-            }, 300);
+            overlay.classList.add('opacity-0'); content.classList.add('scale-90');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
         }
 
-        // Custom Background Engine
+        // Background Preset Maps
         const backgroundPresets = {
             beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80',
             forest: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80',
@@ -1230,20 +1260,13 @@
             dark: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
         };
 
-        // Render Background logic
         function applyBgStyle(urlOrVal) {
             const body = document.getElementById('app-body');
-            if (urlOrVal.startsWith('http') || urlOrVal.startsWith('data:')) {
-                body.style.backgroundImage = `url('${urlOrVal}')`;
-            } else if (urlOrVal.startsWith('linear-gradient')) {
-                body.style.backgroundImage = urlOrVal;
-            } else {
+            if (urlOrVal.startsWith('http') || urlOrVal.startsWith('data:')) body.style.backgroundImage = `url('${urlOrVal}')`;
+            else if (urlOrVal.startsWith('linear-gradient')) body.style.backgroundImage = urlOrVal;
+            else {
                 const targetUrl = backgroundPresets[urlOrVal] || urlOrVal;
-                if (targetUrl.startsWith('linear-gradient')) {
-                    body.style.backgroundImage = targetUrl;
-                } else {
-                    body.style.backgroundImage = `url('${targetUrl}')`;
-                }
+                body.style.backgroundImage = targetUrl.startsWith('linear-gradient') ? targetUrl : `url('${targetUrl}')`;
             }
         }
 
@@ -1255,16 +1278,13 @@
 
         function applyCustomBackground() {
             const inputVal = document.getElementById('custom-bg-input').value.trim();
-            if (!inputVal) {
-                showNotification("Please paste a valid image link.", "error");
-                return;
-            }
+            if (!inputVal) { showNotification("Please paste a valid image link.", "error"); return; }
             applyBgStyle(inputVal);
             localStorage.setItem('class_hub_background', inputVal);
             showNotification("Your custom background is live!", "success");
         }
 
-        // STICKY NOTE MECHANICS
+        // Sticky notes controller operations
         const stickyColors = {
             yellow: { container: 'bg-yellow-400/20', border: 'border-yellow-500/30' },
             pink: { container: 'bg-rose-400/20', border: 'border-rose-500/30' },
@@ -1274,30 +1294,17 @@
 
         function setStickyColor(color) {
             const pad = document.getElementById('sticky-pad');
-            Object.values(stickyColors).forEach(c => {
-                pad.classList.remove(c.container, c.border);
-            });
+            Object.values(stickyColors).forEach(c => pad.classList.remove(c.container, c.border));
             pad.classList.add(stickyColors[color].container, stickyColors[color].border);
             localStorage.setItem('sticky_note_color', color);
-            showNotification(`Sticky note color changed to ${color}`, "success");
         }
 
-        function saveStickyNote() {
-            const text = document.getElementById('sticky-content').value;
-            localStorage.setItem('sticky_note_text', text);
-        }
-
+        function saveStickyNote() { localStorage.setItem('sticky_note_text', document.getElementById('sticky-content').value); }
         let stickyFontSize = 12;
 
         function applyStickyFontSize() {
-            const content = document.getElementById('sticky-content');
-            if (content) {
-                content.style.fontSize = stickyFontSize + 'px';
-            }
-            const label = document.getElementById('sticky-font-label');
-            if (label) {
-                label.textContent = stickyFontSize + 'px';
-            }
+            document.getElementById('sticky-content').style.fontSize = stickyFontSize + 'px';
+            document.getElementById('sticky-font-label').textContent = stickyFontSize + 'px';
         }
 
         function changeStickyFontSize(delta) {
@@ -1306,42 +1313,30 @@
             localStorage.setItem('sticky_note_font_size', stickyFontSize);
         }
 
+        // Initialization Logic
         function loadStickyNote() {
-            const savedText = localStorage.getItem('sticky_note_text') || "";
-            const savedColor = localStorage.getItem('sticky_note_color') || "yellow";
-            const savedSize = localStorage.getItem('sticky_note_font_size') || "12";
-            
-            document.getElementById('sticky-content').value = savedText;
-            setStickyColor(savedColor);
-            
-            stickyFontSize = parseInt(savedSize, 10);
+            document.getElementById('sticky-content').value = localStorage.getItem('sticky_note_text') || "";
+            setStickyColor(localStorage.getItem('sticky_note_color') || "yellow");
+            stickyFontSize = parseInt(localStorage.getItem('sticky_note_font_size') || "12", 10);
             applyStickyFontSize();
         }
 
-        // AGENDA CHECKLIST MECHANICS
+        // Agenda state controller operations
         let agendaItems = [];
-
         function renderAgenda() {
             const listContainer = document.getElementById('agenda-list-container');
             listContainer.innerHTML = "";
-
             if (agendaItems.length === 0) {
                 listContainer.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-4 font-semibold italic">No plans added yet for today!</div>`;
                 return;
             }
-
             agendaItems.forEach((item, index) => {
                 const row = document.createElement('div');
                 row.className = "flex items-center justify-between bg-slate-900/60 border border-white/5 p-2 rounded-xl text-xs space-x-2";
-                
-                const checkedClass = item.completed ? "line-through text-slate-500" : "text-white";
-                const isCheckedAttr = item.completed ? "checked" : "";
-
                 row.innerHTML = `
                     <div class="flex items-center space-x-2.5 flex-1 min-w-0">
-                        <input type="checkbox" ${isCheckedAttr} onchange="toggleAgendaItem(${index})" 
-                               class="w-4 h-4 rounded-md border-white/10 text-teal-600 bg-slate-950 focus:ring-0 cursor-pointer">
-                        <span class="truncate font-semibold tracking-wide ${checkedClass}">${escapeHtml(item.text)}</span>
+                        <input type="checkbox" ${item.completed ? "checked" : ""} onchange="toggleAgendaItem(${index})" class="w-4 h-4 rounded-md border-white/10 text-teal-600 bg-slate-950 cursor-pointer">
+                        <span class="truncate font-semibold tracking-wide ${item.completed ? "line-through text-slate-500" : "text-white"}">${escapeHtml(item.text)}</span>
                     </div>
                     <button onclick="deleteAgendaItem(${index})" class="text-slate-400 hover:text-rose-400 transition text-xs pr-1 font-bold">✕</button>
                 `;
@@ -1350,105 +1345,47 @@
         }
 
         function addAgendaItem() {
-            const input = document.getElementById('agenda-input');
-            const val = input.value.trim();
+            const input = document.getElementById('agenda-input'), val = input.value.trim();
             if (!val) return;
-
             agendaItems.push({ text: val, completed: false });
-            input.value = "";
-            saveAgenda();
-            renderAgenda();
-            showNotification("Agenda task added!", "success");
+            input.value = ""; saveAgenda(); renderAgenda();
         }
-
-        // Listen for enter keys
-        function handleAgendaKey(e) {
-            if (e.key === "Enter") {
-                addAgendaItem();
-            }
-        }
-
-        function toggleAgendaItem(index) {
-            agendaItems[index].completed = !agendaItems[index].completed;
-            saveAgenda();
-            renderAgenda();
-        }
-
-        // Delete agenda item
-        function deleteAgendaItem(index) {
-            agendaItems.splice(index, 1);
-            saveAgenda();
-            renderAgenda();
-            showNotification("Agenda task removed.", "info");
-        }
-
-        // Save layout structures
-        function saveAgenda() {
-            localStorage.setItem('agenda_items', JSON.stringify(agendaItems));
-        }
+        function handleAgendaKey(e) { if (e.key === "Enter") addAgendaItem(); }
+        function toggleAgendaItem(index) { agendaItems[index].completed = !agendaItems[index].completed; saveAgenda(); renderAgenda(); }
+        function deleteAgendaItem(index) { agendaItems.splice(index, 1); saveAgenda(); renderAgenda(); }
+        function saveAgenda() { localStorage.setItem('agenda_items', JSON.stringify(agendaItems)); }
 
         function loadAgenda() {
-            const saved = localStorage.getItem('agenda_items');
-            if (saved) {
-                try {
-                    agendaItems = JSON.parse(saved);
-                } catch(e) {
-                    agendaItems = [];
-                }
-            } else {
+            try { agendaItems = JSON.parse(localStorage.getItem('agenda_items')); } catch(e){}
+            if (!agendaItems || !agendaItems.length) {
                 agendaItems = [
                     { text: "9:00 AM - Science Lab Introduction", completed: false },
-                    { text: "10:15 AM - Interactive Game Session", completed: false },
-                    { text: "11:30 AM - Clean up and Homework Check", completed: false }
+                    { text: "10:15 AM - Interactive Game Session", completed: false }
                 ];
             }
             renderAgenda();
         }
 
         function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Startup Logic Wrapper
+        // Entry point mapping hooks
         window.addEventListener('DOMContentLoaded', () => {
             const savedBg = localStorage.getItem('class_hub_background');
             if (savedBg) {
                 applyBgStyle(savedBg);
-                if (!backgroundPresets[savedBg]) {
-                    document.getElementById('custom-bg-input').value = savedBg;
-                }
+                if (!backgroundPresets[savedBg]) document.getElementById('custom-bg-input').value = savedBg;
             }
-
-            // Load saved settings for group generator
-            const savedNames = localStorage.getItem('group_names_input');
-            if (savedNames) {
-                document.getElementById('group-names-input').value = savedNames;
-            }
-            const savedCount = localStorage.getItem('target_group_count');
-            if (savedCount) {
-                targetGroupCount = parseInt(savedCount, 10);
+            if (localStorage.getItem('group_names_input')) document.getElementById('group-names-input').value = localStorage.getItem('group_names_input');
+            if (localStorage.getItem('target_group_count')) {
+                targetGroupCount = parseInt(localStorage.getItem('target_group_count'), 10);
                 document.getElementById('group-count-label').textContent = targetGroupCount;
             }
+            if (localStorage.getItem('last_qr_text')) document.getElementById('qr-text-input').value = localStorage.getItem('last_qr_text');
 
-            // Load saved settings for QR Generator
-            const savedQR = localStorage.getItem('last_qr_text');
-            if (savedQR) {
-                document.getElementById('qr-text-input').value = savedQR;
-            }
-
-            // Load saved scales, Sticky Notes, and Agenda layout elements
-            loadWidgetScales();
-            loadStickyNote();
-            loadAgenda();
-
-            // Run initial parser sweeps to display visual counters
-            updateStudentCount();
-            updateRandomizerCount();
+            loadWidgetScales(); loadStickyNote(); loadAgenda(); updateStudentCount(); updateRandomizerCount();
+            initWhiteboardCanvas();
         });
     </script>
 </body>
