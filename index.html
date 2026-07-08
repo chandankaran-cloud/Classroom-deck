@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Hub Dashboard</title>
-    <!-- Tailwind CSS for UI Layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code Generator Client-side Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&family=Share+Tech+Mono&display=swap');
@@ -95,15 +93,12 @@
 </head>
 <body id="app-body" class="w-full h-full relative select-none bg-transition bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80');">
 
-    <!-- Whiteboard Overlay Canvas Layer -->
     <div id="whiteboard-layer" class="absolute inset-0 z-10 hidden pointer-events-none">
-        <canvas id="wb-canvas" class="w-full h-full pointer-events-auto cursor-crosshair"></canvas>
+        <canvas id="wb-canvas" class="w-full h-full pointer-events-auto"></canvas>
     </div>
 
-    <!-- Soft dark dimming overlay to keep controls completely readable -->
     <div class="absolute inset-0 bg-slate-950/20 backdrop-blur-[0.5px] pointer-events-none z-0"></div>
 
-    <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-none space-y-2"></div>
 
     <div class="w-full h-full relative overflow-hidden p-6 z-20 pointer-events-none">
@@ -112,54 +107,57 @@
             <h1 class="text-sm font-extrabold text-white/90 tracking-widest drop-shadow-lg">FS CLASSROOM UTILITIES</h1>
         </div>
 
-        <!-- WHITEBOARD TOOLBAR CONTROLS WIDGET -->
-        <div id="widget-whiteboard" class="absolute w-[460px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; right: 520px;">
+        <div id="widget-whiteboard" class="absolute w-[490px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; right: 520px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
-                <span class="text-xs font-bold text-pink-400 tracking-wider">🎨 WHITEBOARD TOOLS</span>
+                <span class="text-xs font-bold text-pink-400 tracking-wider">🎨 INFINITE WHITEBOARD TOOLS</span>
                 <div class="flex items-center space-x-2">
                     <button onclick="toggleWidget('whiteboard')" class="text-slate-400 hover:text-rose-400 font-bold transition">✕</button>
                 </div>
             </div>
             <div class="p-4 flex flex-col space-y-3 text-white">
-                <!-- Modes & Background Controls -->
                 <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
                     <button id="wb-mode-transparent" onclick="setWhiteboardBg('transparent')" class="py-1.5 rounded-xl border border-pink-500 bg-pink-500/20 text-pink-300 transition">Transparent</button>
                     <button id="wb-mode-slate" onclick="setWhiteboardBg('slate')" class="py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition">Dark Slate</button>
                     <button id="wb-mode-white" onclick="setWhiteboardBg('white')" class="py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition">Whiteboard</button>
                 </div>
                 
-                <!-- Color Toggles & History Actions -->
                 <div class="flex items-center justify-between bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
-                    <div class="flex items-center space-x-1.5">
-                        <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider mr-1">Color:</span>
+                    <div class="flex items-center space-x-1">
+                        <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider mr-1">Tool:</span>
+                        <button onclick="setWbTool('pen')" id="wb-tool-pen" class="px-2 py-0.5 text-[9px] font-bold rounded-md border border-pink-500 bg-pink-500/20 text-pink-300 transition uppercase tracking-wider">🖊️ Pen</button>
+                        <button onclick="setWbTool('eraser')" id="wb-tool-eraser" class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider">🧽 Eraser</button>
+                        <button onclick="setWbTool('pan')" id="wb-tool-pan" title="Hold Spacebar to pan anytime" class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider">🖐️ Pan Space</button>
+                    </div>
+                    <div class="flex items-center space-x-1 border-l border-white/10 pl-2">
+                        <button onclick="wbUndo()" title="Undo (Ctrl+Z)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↩️</button>
+                        <button onclick="wbRedo()" title="Redo (Ctrl+Y)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↪️</button>
+                        <button onclick="resetWbView()" title="Reset Origin View" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">🎯</button>
+                    </div>
+                </div>
+
+                <div id="wb-colors-row" class="flex items-center justify-between bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
+                    <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Colors:</span>
+                    <div class="flex items-center space-x-2">
                         <button onclick="setWbColor('#ef4444')" class="w-5 h-5 rounded-full bg-rose-500 border border-white/20 transform hover:scale-110 transition"></button>
                         <button onclick="setWbColor('#3b82f6')" class="w-5 h-5 rounded-full bg-blue-500 border border-white/20 transform hover:scale-110 transition"></button>
                         <button onclick="setWbColor('#22c55e')" class="w-5 h-5 rounded-full bg-emerald-500 border border-white/20 transform hover:scale-110 transition"></button>
                         <button onclick="setWbColor('#eab308')" class="w-5 h-5 rounded-full bg-yellow-500 border border-white/20 transform hover:scale-110 transition"></button>
                         <button onclick="setWbColor('#ffffff')" class="w-5 h-5 rounded-full bg-white border border-slate-400 transform hover:scale-110 transition"></button>
                         <button onclick="setWbColor('#0f172a')" class="w-5 h-5 rounded-full bg-slate-900 border border-white/20 transform hover:scale-110 transition"></button>
-                        <button id="wb-tool-eraser" onclick="activateWbEraser()" class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider">🧽 Eraser</button>
-                    </div>
-                    <!-- Undo / Redo Buttons -->
-                    <div class="flex items-center space-x-1 border-l border-white/10 pl-2">
-                        <button onclick="wbUndo()" title="Undo (Ctrl+Z)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↩️</button>
-                        <button onclick="wbRedo()" title="Redo (Ctrl+Y)" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition border border-white/5">↪️</button>
                     </div>
                 </div>
 
-                <!-- Size Selector and Operations -->
                 <div class="flex items-center justify-between bg-slate-950/40 p-2.5 rounded-xl border border-white/5">
                     <div class="flex items-center space-x-2">
                         <span class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Size:</span>
                         <input type="range" id="wb-brush-slider" min="2" max="30" value="5" class="w-24 h-1 bg-slate-800 appearance-none cursor-pointer accent-pink-500 rounded-lg">
                         <span id="wb-brush-label" class="text-[10px] font-extrabold text-pink-400">5px</span>
                     </div>
-                    <button onclick="clearWbCanvas()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-4 py-1.5 rounded-xl text-xs tracking-wider uppercase shadow-md">Clear Canvas</button>
+                    <button onclick="clearWbCanvas()" class="bg-rose-600 hover:bg-rose-500 transition text-white font-bold px-4 py-1.5 rounded-xl text-xs tracking-wider uppercase shadow-md">Clear All</button>
                 </div>
             </div>
         </div>
 
-        <!-- 1. CLOCK -->
         <div id="widget-clock" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-indigo-300 tracking-wider">🕒 CLOCK</span>
@@ -175,7 +173,6 @@
             </div>
         </div>
 
-        <!-- 2. TIMER -->
         <div id="widget-timer" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 350px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-emerald-300 tracking-wider">⏱️ TIMER</span>
@@ -199,7 +196,6 @@
             </div>
         </div>
 
-        <!-- 3. VOICE LEVEL CHART -->
         <div id="widget-sound" class="absolute w-80 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-rose-300 tracking-wider">🎙️ VOICE LEVEL METER</span>
@@ -241,7 +237,6 @@
             </div>
         </div>
 
-        <!-- 4. RANDOMIZER -->
         <div id="widget-picker" class="absolute w-64 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 350px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-purple-300 tracking-wider">🎰 RANDOMIZER</span>
@@ -261,7 +256,6 @@
             </div>
         </div>
 
-        <!-- 5. WORK SYMBOLS -->
         <div id="widget-symbols" class="absolute w-[440px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; right: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-amber-300 tracking-wider">📣 EXPECTATIONS</span>
@@ -291,7 +285,6 @@
             </div>
         </div>
 
-        <!-- 6. STICKY NOTES WIDGET -->
         <div id="widget-notes" class="absolute w-72 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 100px; left: 630px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-yellow-300 tracking-wider">📌 STICKY NOTE</span>
@@ -332,7 +325,6 @@
             </div>
         </div>
 
-        <!-- 7. AGENDA WIDGET -->
         <div id="widget-agenda" class="absolute w-[320px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 630px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-teal-300 tracking-wider">📋 DAILY AGENDA</span>
@@ -356,7 +348,6 @@
             </div>
         </div>
 
-        <!-- 8. RANDOM GROUP GENERATOR -->
         <div id="widget-groups" class="absolute w-[360px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 280px; left: 970px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-pink-300 tracking-wider">👥 GROUP GENERATOR</span>
@@ -394,7 +385,6 @@
             </div>
         </div>
 
-        <!-- 10. QR CODE GENERATOR -->
         <div id="widget-qr" class="absolute w-[310px] rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 220px; left: 1310px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-orange-300 tracking-wider">📱 QR CODE GENERATOR</span>
@@ -436,7 +426,6 @@
             </div>
         </div>
 
-        <!-- 9. SETTINGS & BACKGROUNDS WIDGET -->
         <div id="widget-settings" class="absolute w-80 rounded-3xl glass-widget overflow-hidden pointer-events-auto hidden" style="top: 220px; right: 50px;">
             <div class="drag-handle bg-slate-900/40 px-4 py-2.5 flex justify-between items-center border-b border-white/5">
                 <span class="text-xs font-bold text-sky-300 tracking-wider">⚙️ DASHBOARD SETTINGS</span>
@@ -478,7 +467,6 @@
             </div>
         </div>
 
-        <!-- CONTROL PANEL DOCKBAR WITH LABELS -->
         <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 dock-container px-6 py-3.5 rounded-3xl flex space-x-4 shadow-3xl z-30 max-w-[95%] overflow-x-auto custom-scrollbar pointer-events-auto">
             <button onclick="toggleWhiteboardCanvas()" class="flex flex-col items-center group transition transform hover:scale-105 shrink-0">
                 <div id="dock-btn-wb" class="w-12 h-12 rounded-2xl bg-pink-600/90 hover:bg-pink-500 text-xl flex items-center justify-center shadow-md transition-colors duration-200">🎨</div>
@@ -527,7 +515,6 @@
         </nav>
     </div>
 
-    <!-- GIANT SYMBOL FULLSCREEN OVERLAY -->
     <div id="giant-symbol-overlay" onclick="closeGiantSymbol()" class="fixed inset-0 bg-slate-950/20 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center cursor-pointer hidden transition duration-300 opacity-0">
         <div class="text-center p-8 bg-transparent transform scale-90 transition duration-300 max-w-2xl" id="giant-symbol-content">
             <span id="giant-symbol-emoji" class="text-[12rem] md:text-[18rem] block filter drop-shadow-[0_0_60px_rgba(255,255,255,0.5)] animate-bounce select-none">🤫</span>
@@ -691,94 +678,206 @@
             }
         }
 
-        // --- WHITEBOARD ENGINE & UNDO-REDO MEMORY STACK ---
+        // --- HARMONIZED INFINITE VECTOR WHITEBOARD ENGINE ---
         const wbLayer = document.getElementById('whiteboard-layer');
         const canvas = document.getElementById('wb-canvas');
         const ctx = canvas.getContext('2d');
-        let drawing = false;
+
+        // Virtual Camera Transforms
+        let cameraOffset = { x: 0, y: 0 };
+        let isPanning = false;
+        let panStart = { x: 0, y: 0 };
+        let activeTool = 'pen'; // 'pen', 'eraser', 'pan'
+        let spacePressed = false;
+
+        // Vector Data Stores
+        let strokesArray = [];
+        let undoStrokesStack = [];
+        let currentStroke = null;
+
         let wbColor = '#ffffff';
         let wbBrushSize = 5;
-        let isEraser = false;
-
-        // History Data Arrays
-        let wbUndoStack = [];
-        let wbRedoStack = [];
-        const MAX_HISTORY_STEPS = 25;
 
         function initWhiteboardCanvas() {
-            // Save contents before resize to prevent accidental canvas loss
-            let tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            let tempCtx = tempCanvas.getContext('2d');
-            if (canvas.width > 0 && canvas.height > 0) {
-                tempCtx.drawImage(canvas, 0, 0);
-            }
-
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            
-            // Restore drawing state
-            if (tempCanvas.width > 0 && tempCanvas.height > 0) {
-                ctx.drawImage(tempCanvas, 0, 0);
-            }
+            redrawWbCanvas();
         }
         window.addEventListener('resize', initWhiteboardCanvas);
 
-        function saveWbState() {
-            // Cap state collection bounds limits
-            if (wbUndoStack.length >= MAX_HISTORY_STEPS) {
-                wbUndoStack.shift();
+        function redrawWbCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            // Apply Camera Translation Matrix offset
+            ctx.translate(cameraOffset.x, cameraOffset.y);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            strokesArray.forEach(stroke => {
+                if (stroke.points.length < 1) return;
+                ctx.lineWidth = stroke.size;
+                ctx.strokeStyle = stroke.color;
+                ctx.globalCompositeOperation = stroke.isEraser ? 'destination-out' : 'source-over';
+                
+                ctx.beginPath();
+                ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                for (let i = 1; i < stroke.points.length; i++) {
+                    ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+                }
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        function setWbTool(tool) {
+            activeTool = tool;
+            const tools = ['pen', 'eraser', 'pan'];
+            tools.forEach(t => {
+                const btn = document.getElementById(`wb-tool-${t}`);
+                btn.className = "px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider";
+            });
+            document.getElementById(`wb-tool-${tool}`).className = "px-2 py-0.5 text-[9px] font-bold rounded-md border border-pink-500 bg-pink-500/20 text-pink-300 transition uppercase tracking-wider";
+            
+            // Toggle coloring availability metrics UI
+            document.getElementById('wb-colors-row').style.opacity = (tool === 'pen') ? '1' : '0.4';
+        }
+
+        function setWbColor(color) {
+            wbColor = color;
+            setWbTool('pen');
+        }
+
+        function clearWbCanvas() {
+            if (strokesArray.length > 0) {
+                undoStrokesStack = [...strokesArray];
+                strokesArray = [];
+                redrawWbCanvas();
+                showNotification("Canvas cleared clean! Use Ctrl+Z to undo.", "info");
             }
-            wbUndoStack.push(canvas.toDataURL());
-            wbRedoStack = []; // Clear redo stack on fresh drawing strokes actions
         }
 
         function wbUndo() {
-            if (wbUndoStack.length === 0) {
+            if (strokesArray.length === 0) {
                 showNotification("Nothing left to undo!", "error");
                 return;
             }
-            wbRedoStack.push(canvas.toDataURL());
-            let previousStateUrl = wbUndoStack.pop();
-            restoreWbState(previousStateUrl);
+            undoStrokesStack.push(strokesArray.pop());
+            redrawWbCanvas();
         }
 
         function wbRedo() {
-            if (wbRedoStack.length === 0) {
+            if (undoStrokesStack.length === 0) {
                 showNotification("Nothing left to redo!", "error");
                 return;
             }
-            wbUndoStack.push(canvas.toDataURL());
-            let nextStateUrl = wbRedoStack.pop();
-            restoreWbState(nextStateUrl);
+            strokesArray.push(undoStrokesStack.pop());
+            redrawWbCanvas();
         }
 
-        function restoreWbState(dataUrl) {
-            let img = new Image();
-            img.src = dataUrl;
-            img.onload = function() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.save();
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.drawImage(img, 0, 0);
-                ctx.restore();
+        function resetWbView() {
+            cameraOffset = { x: 0, y: 0 };
+            redrawWbCanvas();
+            showNotification("View reset back to baseline center target.", "success");
+        }
+
+        // Get Screen coordinates mapped accurately to Infinite Coordinates Matrix Space
+        function getVirtualMousePos(e) {
+            return {
+                x: e.clientX - cameraOffset.x,
+                y: e.clientY - cameraOffset.y
             };
         }
 
-        // Global shortcuts framework layout hook mapping
+        // Mouse Event bindings
+        canvas.addEventListener('mousedown', (e) => {
+            if (activeTool === 'pan' || spacePressed || e.button === 1) {
+                isPanning = true;
+                panStart = { x: e.clientX - cameraOffset.x, y: e.clientY - cameraOffset.y };
+                return;
+            }
+            
+            const vPos = getVirtualMousePos(e);
+            currentStroke = {
+                points: [vPos],
+                color: wbColor,
+                size: wbBrushSize,
+                isEraser: (activeTool === 'eraser')
+            };
+            strokesArray.push(currentStroke);
+            undoStrokesStack = []; // Break forward redos stack array chain
+            redrawWbCanvas();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                cameraOffset.x = e.clientX - panStart.x;
+                cameraOffset.y = e.clientY - panStart.y;
+                redrawWbCanvas();
+                return;
+            }
+            if (!currentStroke) return;
+            currentStroke.points.push(getVirtualMousePos(e));
+            redrawWbCanvas();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            currentStroke = null;
+        });
+
+        // Spacebar tracking matrix mapping logic switches layout hook seamlessly
         window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !spacePressed) {
+                // Ensure textareas or input focuses elements don't grab typing space event execution paths
+                if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') return;
+                e.preventDefault();
+                spacePressed = true;
+                canvas.style.cursor = 'grab';
+            }
+            // Universal system combinations hook monitoring
             if (wbLayer.classList.contains('hidden')) return;
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                e.preventDefault();
-                wbUndo();
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); wbUndo(); }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); wbRedo(); }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                spacePressed = false;
+                canvas.style.cursor = 'crosshair';
             }
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-                e.preventDefault();
-                wbRedo();
+        });
+
+        // Touch systems optimization maps configurations mappings
+        canvas.addEventListener('touchstart', (e) => {
+            if (activeTool === 'pan' || e.touches.length > 1) {
+                isPanning = true;
+                const t = e.touches[0];
+                panStart = { x: t.clientX - cameraOffset.x, y: t.clientY - cameraOffset.y };
+                return;
             }
+            const t = e.touches[0];
+            const vPos = { x: t.clientX - cameraOffset.x, y: t.clientY - cameraOffset.y };
+            currentStroke = { points: [vPos], color: wbColor, size: wbBrushSize, isEraser: (activeTool === 'eraser') };
+            strokesArray.push(currentStroke);
+            redrawWbCanvas();
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const t = e.touches[0];
+            if (isPanning) {
+                cameraOffset.x = t.clientX - panStart.x;
+                cameraOffset.y = t.clientY - panStart.y;
+                redrawWbCanvas();
+                return;
+            }
+            if (!currentStroke) return;
+            currentStroke.points.push({ x: t.clientX - cameraOffset.x, y: t.clientY - cameraOffset.y });
+            redrawWbCanvas();
+        });
+
+        document.getElementById('wb-brush-slider').addEventListener('input', (e) => {
+            wbBrushSize = e.target.value;
+            document.getElementById('wb-brush-label').textContent = wbBrushSize + 'px';
         });
 
         function toggleWhiteboardCanvas() {
@@ -790,7 +889,7 @@
                 dockBtn.classList.remove('bg-pink-600/90');
                 dockBtn.classList.add('bg-pink-500', 'ring-4', 'ring-pink-400/40');
                 initWhiteboardCanvas();
-                showNotification("Whiteboard layout active! Press Ctrl+Z to undo.", "success");
+                showNotification("Infinite board open! Hold Spacebar to Pan and Move canvas.", "success");
             } else {
                 wbLayer.classList.add('hidden');
                 document.getElementById('widget-whiteboard').classList.add('hidden');
@@ -802,87 +901,11 @@
         function setWhiteboardBg(mode) {
             const modes = ['transparent', 'slate', 'white'];
             modes.forEach(m => {
-                const btn = document.getElementById(`wb-mode-${m}`);
-                btn.className = "py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition";
+                document.getElementById(`wb-mode-${m}`).className = "py-1.5 rounded-xl border border-white/5 bg-slate-950/60 hover:bg-slate-800 transition";
             });
-            const activeBtn = document.getElementById(`wb-mode-${mode}`);
-            activeBtn.className = "py-1.5 rounded-xl border border-pink-500 bg-pink-500/20 text-pink-300 transition";
-
-            if (mode === 'transparent') {
-                wbLayer.style.background = 'transparent';
-            } else if (mode === 'slate') {
-                wbLayer.style.background = '#0f172a';
-            } else if (mode === 'white') {
-                wbLayer.style.background = '#ffffff';
-            }
+            document.getElementById(`wb-mode-${mode}`).className = "py-1.5 rounded-xl border border-pink-500 bg-pink-500/20 text-pink-300 transition";
+            wbLayer.style.background = (mode === 'transparent') ? 'transparent' : (mode === 'slate') ? '#0f172a' : '#ffffff';
         }
-
-        function setWbColor(color) {
-            isEraser = false;
-            wbColor = color;
-            document.getElementById('wb-tool-eraser').className = "px-2.5 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 hover:bg-slate-700 transition border border-white/10 uppercase tracking-wider";
-        }
-
-        function activateWbEraser() {
-            isEraser = true;
-            document.getElementById('wb-tool-eraser').className = "px-2.5 py-0.5 text-[9px] font-bold rounded-md border border-pink-500 bg-pink-500/20 text-pink-300 transition uppercase tracking-wider";
-        }
-
-        function clearWbCanvas() {
-            saveWbState(); // Save state before wiping to allow clearing reversal execution
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            showNotification("Canvas cleared clean!", "info");
-        }
-
-        document.getElementById('wb-brush-slider').addEventListener('input', (e) => {
-            wbBrushSize = e.target.value;
-            document.getElementById('wb-brush-label').textContent = wbBrushSize + 'px';
-        });
-
-        // Drawing Triggers
-        canvas.addEventListener('mousedown', (e) => {
-            saveWbState(); // Capture current image data array layer frame configuration layout state blocks
-            drawing = true;
-            ctx.beginPath();
-            ctx.moveTo(e.clientX, e.clientY);
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!drawing) return;
-            ctx.lineWidth = wbBrushSize;
-            
-            if (isEraser) {
-                ctx.globalCompositeOperation = 'destination-out';
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = wbColor;
-            }
-            
-            ctx.lineTo(e.clientX, e.clientY);
-            ctx.stroke();
-        });
-
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseleave', () => drawing = false);
-
-        // Touch setups for Smart Boards / Tablets
-        canvas.addEventListener('touchstart', (e) => {
-            saveWbState();
-            const t = e.touches[0];
-            drawing = true;
-            ctx.beginPath();
-            ctx.moveTo(t.clientX, t.clientY);
-        });
-        canvas.addEventListener('touchmove', (e) => {
-            if (!drawing) return;
-            const t = e.touches[0];
-            ctx.lineWidth = wbBrushSize;
-            ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
-            if (!isEraser) ctx.strokeStyle = wbColor;
-            ctx.lineTo(t.clientX, t.clientY);
-            ctx.stroke();
-        });
-        canvas.addEventListener('touchend', () => drawing = false);
 
         // --- CORE RESCALING LAYOUT CONTROLS ---
         let widgetScales = { clock: 1.0, timer: 1.0, sound: 1.0, picker: 1.0, symbols: 1.0, notes: 1.0, agenda: 1.0, settings: 1.0, groups: 1.0, qr: 1.0, whiteboard: 1.0 };
